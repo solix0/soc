@@ -169,6 +169,8 @@
             align-items: center;
             border-bottom: 1px solid #222;
             flex-shrink: 0;
+            z-index: 15;
+            position: relative;
         }
         .home-header h1 {
             font-size: 1.35rem;
@@ -206,6 +208,7 @@
             align-items: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
         .main-profile-card:active { transform: scale(0.98); background: #151515; }
         
@@ -235,7 +238,7 @@
             position: relative;
             transition: all 0.3s ease;
         }
-        .active-chat-row.hidden { display: none; }
+        .active-chat-row.hidden { display: none !important; }
 
         .active-chat-row:hover {
             transform: scale(0.96);
@@ -307,7 +310,7 @@
             z-index: 5;
         }
 
-        .connect-section { margin: 20px 20px; margin-bottom: -10px; }
+        .connect-section { margin: 20px 20px; margin-bottom: -10px; flex-shrink: 0; }
         .connect-row {
             display: flex;
             gap: 8px;
@@ -441,7 +444,33 @@
         .peer-info-avatar { width: 36px; height: 36px; border-radius: 50%; background: #2a2a2a; overflow: hidden; position: relative; }
         .peer-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .peer-info-nick { font-weight: 600; font-size: 0.95rem; color: #eee; }
-        .placeholder-right { width: 36px; visibility: hidden; }
+        
+        .call-btn-header {
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            width: 42px;
+            height: 42px;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .call-btn-header img {
+            width: 20px;
+            height: 20px;
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+        .call-btn-header:hover {
+            transform: scale(0.9);
+            background: #2a2a2a;
+        }
+        .call-btn-header:hover img {
+            opacity: 1;
+        }
 
         #chatMessages {
             flex: 1;
@@ -547,10 +576,18 @@
             gap: 8px;
             align-items: center;
             position: relative;
+            width: 100%;
+            box-sizing: border-box;
+            left: 0;
+            right: 0;
         }
         .btn-icon {
-            width: 42px;
-            height: 42px;
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            min-height: 42px !important;
+            max-width: 42px !important;
+            max-height: 42px !important;
             border-radius: 50%;
             border: 1px solid #3a3a3a;
             background: #1a1a1a;
@@ -560,6 +597,8 @@
             cursor: pointer;
             flex-shrink: 0;
             transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            overflow: hidden;
+            padding: 0;
         }
         .btn-icon:hover {
             transform: scale(0.9);
@@ -567,8 +606,10 @@
         }
         .btn-red { background: #3a2a2a !important; }
         .btn-red:hover { background: #4a3a3a !important; }
+        
         #msgInput {
             flex: 1;
+            min-width: 0;
             background: #111;
             border: 1px solid #2a2a2a;
             padding: 10px 14px;
@@ -581,7 +622,21 @@
         #msgInput:focus { border-color: #6a6a6a; background: #181818; }
         .send-btn { background: #202020; flex-shrink: 0; }
         .send-btn:hover { background: #303030; }
-        .btn-img { width: 22px; height: 22px; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.8; }
+        
+        .input-area .btn-img {
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+            display: block;
+            margin: auto;
+        }
+
         .date-divider {
             align-self: center;
             margin: 20px 0 10px;
@@ -876,141 +931,223 @@
         .status-dot.away { background: #f39c12; }
         .status-dot.dnd { background: #8e44ad; }
 
-        /* Чтобы точка не обрезалась */
-.active-chat-avatar {
-    position: relative;
-    width: 48px;
-    height: 48px;
-    flex-shrink: 0;
-    overflow: visible !important;
-}
+        .active-chat-avatar {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            overflow: visible !important;
+        }
 
-.active-chat-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
+        .active-chat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
 
-.active-chat-avatar .status-dot,
-.active-chat-avatar > span.status-dot {
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid #000000;
-    z-index: 10;
-}
+        .active-chat-avatar .status-dot,
+        .active-chat-avatar > span.status-dot {
+            position: absolute;
+            bottom: 0px;
+            right: 0px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #000000;
+            z-index: 10;
+        }
 
-.peer-info-avatar {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
-    overflow: visible !important;
-}
+        .peer-info-avatar {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            overflow: visible !important;
+        }
 
-.peer-info-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
+        .peer-info-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
 
-.peer-info-avatar .status-dot,
-.peer-info-avatar > span.status-dot {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid #0a0a0a;
-    z-index: 10;
-}
+        .peer-info-avatar .status-dot,
+        .peer-info-avatar > span.status-dot {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #0a0a0a;
+            z-index: 10;
+        }
 
-.status-dot.online { background: #2ecc2e; }
-.status-dot.offline { background: #e74c3c; }
-.status-dot.away { background: #f39c12; }
-.status-dot.connecting { background: #f1c40f; }
+        .status-dot.online { background: #2ecc2e; }
+        .status-dot.offline { background: #e74c3c; }
+        .status-dot.away { background: #f39c12; }
+        .status-dot.connecting { background: #f1c40f; }
 
-#chatsListContainer .unread-badge {
-    position: absolute !important;
-    top: -7px !important;
-    right: -7px !important;
-    left: auto !important;
-    z-index: 100 !important;
-    margin: 0 !important;
-}
+        #chatsListContainer .unread-badge {
+            position: absolute !important;
+            top: -7px !important;
+            right: -7px !important;
+            left: auto !important;
+            z-index: 100 !important;
+            margin: 0 !important;
+        }
 
-/* INPUT AREA - ТІЛЬКИ ВИПРАВЛЕННЯ БЕЗ ЗБІЛЬШЕНЬ */
-.input-area {
-    padding: 8px 12px;
-    background: #0a0a0a;
-    border-top: 1px solid #1f1f1f;
-    flex-shrink: 0;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    position: relative;
-    width: 100%;
-    box-sizing: border-box;
-    left: 0;
-    right: 0;
-}
+        .chat-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #000000;
+            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transform: translateX(100%);
+            z-index: 20;
+        }
 
-.btn-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: 1px solid #3a3a3a;
-    background: #1a1a1a;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-}
-
-#msgInput {
-    flex: 1;
-    min-width: 0;
-    background: #111;
-    border: 1px solid #2a2a2a;
-    padding: 10px 14px;
-    border-radius: 32px;
-    color: white;
-    outline: none;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.send-btn { background: #202020; flex-shrink: 0; }
-
-/* chat-screen - ВИПРАВЛЕННЯ */
-.chat-screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: #000000;
-    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    transform: translateX(100%);
-    z-index: 20;
-}
-
-
+        /* Modal Call Overlay Style */
+        .call-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .call-modal-overlay.active {
+            display: flex;
+        }
+        .call-modal-content {
+            background: #111111;
+            border: 1px solid #333;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 320px;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: modalPopIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+        .call-avatar-container {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #3a3a3a;
+            margin-bottom: 16px;
+            background: #1e1e1e;
+        }
+        .call-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .call-info {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .call-peer-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .call-status-text {
+            font-size: 0.75rem;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .call-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        .call-ctrl-btn {
+            width: 54px !important;
+            height: 54px !important;
+            min-width: 54px !important;
+            min-height: 54px !important;
+            max-width: 54px !important;
+            max-height: 54px !important;
+            border-radius: 50% !important;
+            border: 1px solid #3a3a3a;
+            background: #1a1a1a;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .call-ctrl-btn img {
+            width: 22px !important;
+            height: 22px !important;
+            min-width: 22px !important;
+            min-height: 22px !important;
+            max-width: 22px !important;
+            max-height: 22px !important;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            opacity: 0.9;
+            display: block;
+            margin: auto;
+        }
+        .call-ctrl-btn:hover {
+            transform: scale(0.95);
+            background: #2a2a2a;
+        }
+        .call-ctrl-btn.end-call {
+            background: #d9534f;
+            border-color: #d9534f;
+        }
+        .call-ctrl-btn.end-call:hover {
+            background: #c9302c;
+        }
+        .call-ctrl-btn.accept-call {
+            background: #2ecc2e;
+            border-color: #2ecc2e;
+        }
+        .call-ctrl-btn.accept-call:hover {
+            background: #27ae60;
+        }
+        .call-ctrl-btn.accept-call img {
+            filter: brightness(0) invert(1);
+        }
+        .call-ctrl-btn.active-state {
+            background: #fff;
+        }
+        .call-ctrl-btn.active-state img {
+            filter: brightness(0);
+        }
     </style>
 </head>
 <body>
+<!-- Звуки вызова и сообщений -->
+<audio id="dialingSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" loop preload="auto"></audio>
+<audio id="ringingSound" src="https://assets.mixkit.co/active_storage/sfx/2865/2865-preview.mp3" loop preload="auto"></audio>
 <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
+<audio id="remoteAudio" autoplay></audio>
 
 <div id="preloader" class="preloader">
     <div class="preloader-content">
@@ -1027,6 +1164,7 @@
                 <h1>SOC.</h1>
                 <span id="status">OFFLINE</span>
             </div>
+
             <div id="connectSection" class="connect-section">
                 <div class="connect-row">
                     <input type="text" id="peer-nick-input" placeholder="friend's nickname..." autocomplete="off">
@@ -1034,19 +1172,19 @@
                 </div>
             </div>
 
-                            <div class="main-profile-card" id="mainProfileBtn">
-                    <div class="avatar-large"><img id="homeAvatarImg" src="image/ava1.png" draggable="false"></div>
-                    <div class="main-nick" id="homeNick">---</div>
-                    <div class="main-status" id="homeStatus">online</div>
-                </div>
-            <div class="home-scrollable">
+            <div class="main-profile-card" id="mainProfileBtn">
+                <div class="avatar-large"><img id="homeAvatarImg" src="image/ava1.png" draggable="false"></div>
+                <div class="main-nick" id="homeNick">---</div>
+                <div class="main-status" id="homeStatus">online</div>
+            </div>
 
+            <div class="home-scrollable">
                 <div id="chatsListContainer" style="margin: 10px 20px; display: flex; flex-direction: column; gap: 8px;"></div>
                 <div id="notConnectedPlaceholder" class="not-connect-placeholder"> 
                     <span>NO ACTIVE CHATS</span>
                 </div>
+                <div class="rules-bottom-btn" style="margin: 10px 20px;" onclick="showRulesFromHome()">RULES & DISCLAIMER</div>
             </div>
-            <div class="rules-bottom-btn" style="margin: 10px 20px;" onclick="showRulesFromHome()">RULES & DISCLAIMER</div>
         </div>
 
         <div class="chat-screen" id="chatScreen">
@@ -1063,7 +1201,9 @@
                         <div class="peer-info-nick" id="peerNickChat">friend</div>
                     </div>
                 </div>
-                <div class="placeholder-right"></div>
+                <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
+                    <img src="image/phone.png" alt="Call" draggable="false">
+                </button>
             </div>
             <div id="chatMessages"></div>
             <div class="input-area">
@@ -1074,6 +1214,49 @@
             </div>
             <button id="scrollDownBtn" class="scroll-down-btn">
                 <img src="image/down.png" alt="↓" draggable="false">
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Call Window Overlay (Incoming Call) -->
+<div class="call-modal-overlay" id="incomingCallModalOverlay">
+    <div class="call-modal-content">
+        <div class="call-avatar-container">
+            <img id="incomingCallPeerAvatar" src="image/ava1.png" alt="avatar">
+        </div>
+        <div class="call-info">
+            <div class="call-peer-name" id="incomingCallPeerName">Friend</div>
+            <div class="call-status-text">Incoming Call...</div>
+        </div>
+        <div class="call-controls">
+            <button class="call-ctrl-btn end-call" id="rejectCallBtn" title="Decline">
+                <img src="image/close.png" alt="Cancel" draggable="false">
+            </button>
+            <button class="call-ctrl-btn accept-call" id="acceptCallBtn" title="Accept">
+                <img src="image/phone.png" alt="Phone" draggable="false">
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Active Call Window Overlay -->
+<div class="call-modal-overlay" id="callModalOverlay">
+    <div class="call-modal-content">
+        <div class="call-avatar-container">
+            <img id="callPeerAvatar" src="image/ava1.png" alt="avatar">
+        </div>
+        <div class="call-info">
+            <div class="call-peer-name" id="callPeerName">Friend</div>
+            <div class="call-status-text" id="callStatusText">Calling...</div>
+        </div>
+        <div class="call-controls">
+            <button class="call-ctrl-btn" id="muteMicBtn" onclick="toggleCallMute()" title="Mute Mic">
+                <img id="muteMicImg" src="image/mic.png" alt="Mic" draggable="false">
+            </button>
+            <button class="call-ctrl-btn end-call" onclick="endAudioCall()" title="End Call">
+                <img src="image/close.png" alt="End" draggable="false">
             </button>
         </div>
     </div>
@@ -1147,8 +1330,11 @@
     let isChatOpen = false;
     let reactionsStore = new Map();
     let activeReactionPicker = null;
+
+    let currentCall = null;
+    let localAudioStream = null;
+    let isMicMuted = false;
     
-    // DOM элементы
     const homeScreen = document.getElementById('homeScreen');
     const chatScreen = document.getElementById('chatScreen');
     const homeNickSpan = document.getElementById('homeNick');
@@ -1163,8 +1349,24 @@
     let lastDateLabel = "";
     let isUserScrolling = false;
     let scrollTimeout = null;
-    
-    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
+    // Вспомогательные функции для управления звуками вызова
+    function playDialingSound() {
+        const sound = document.getElementById('dialingSound');
+        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
+    }
+    function stopDialingSound() {
+        const sound = document.getElementById('dialingSound');
+        if (sound) { sound.pause(); sound.currentTime = 0; }
+    }
+    function playRingingSound() {
+        const sound = document.getElementById('ringingSound');
+        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
+    }
+    function stopRingingSound() {
+        const sound = document.getElementById('ringingSound');
+        if (sound) { sound.pause(); sound.currentTime = 0; }
+    }
     
     function escapeHtml(str) {
         if (!str) return '';
@@ -1191,13 +1393,6 @@
         document.getElementById('alertOkBtn').onclick = () => {
             animateModalClose(overlay, () => { if (callback) callback(); });
         };
-    }
-    
-    function formatLastMessage(type, data) {
-        if (type === 'text') return data.length > 30 ? data.substring(0, 27) + '...' : data;
-        if (type === 'image') return '✿ Photo';
-        if (type === 'audio') return '♪ Voice';
-        return '---';
     }
     
     function updateHomeUI() {
@@ -1383,8 +1578,6 @@
         setTimeout(() => checkScrollPosition(), 50);
     }
     
-    // ========== ФУНКЦИИ РЕАКЦИЙ ==========
-    
     function showReactionPicker(msgElement, msgId, isMyMessage) {
         if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
         const picker = document.createElement('div');
@@ -1485,8 +1678,6 @@
         if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
     
-    // ========== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ==========
-    
     function switchToChatMode() {
         isChatOpen = true;
         homeScreen.classList.add('chat-open');
@@ -1535,6 +1726,15 @@
         
         connection.on('open', () => {
             connection.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
+            
+            if (chat.history && chat.history.length > 0) {
+                chat.history.forEach(item => {
+                    if (item.side === 'my') {
+                        connection.send({ type: item.type, data: item.data, msgId: item.msgId });
+                    }
+                });
+            }
+
             if (currentChatPeer === peerId) {
                 currentConn = connection;
                 updateStatus(`CHAT WITH: ${chat.nick}`, '#559b61');
@@ -1566,20 +1766,31 @@
                     (payload.type === 'image' ? '✿ Photo' : '♪ Voice');
                 if (currentChatPeer !== peerId) chatData.unreadCount = (chatData.unreadCount || 0) + 1;
                 if (!chatData.history) chatData.history = [];
-                chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: Date.now(), msgId: payload.msgId });
-                if (chatData.history.length > 50) chatData.history.shift();
-                saveAllChats();
-                if (currentChatPeer === peerId) {
-                    addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
-                    const sound = document.getElementById('msgSound');
-                    if(sound) sound.play().catch(e=>{});
-                } else {
-                    updateChatsListUI();
+                
+                const exists = chatData.history.some(m => m.msgId === payload.msgId);
+                if (!exists) {
+                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: Date.now(), msgId: payload.msgId });
+                    if (chatData.history.length > 50) chatData.history.shift();
+                    saveAllChats();
+                    if (currentChatPeer === peerId) {
+                        addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
+                        const sound = document.getElementById('msgSound');
+                        if(sound) sound.play().catch(e=>{});
+                    } else {
+                        updateChatsListUI();
+                    }
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
             } else if (payload.type === 'peer_closed_chat') {
                 removeChat(peerId);
+            } else if (payload.type === 'call_rejected') {
+                // Если тот, кому звонили, сбросил вызов — закрываем модалку у инициатора
+                if (currentCall) {
+                    currentCall.close();
+                    currentCall = null;
+                }
+                closeCallModal();
             }
         });
         
@@ -1633,41 +1844,40 @@
         switchToChatMode();
     }
     
-function removeChat(peerId) {
-    // Показываем подтверждение
-    const overlay = document.getElementById('modal-overlay');
-    document.getElementById('modal-text').innerHTML = `Close chat with ${escapeHtml(activeChats.get(peerId)?.displayName || peerId)}?<br><small style="color:#888;">All messages will be deleted</small>`;
-    const actionsDiv = document.getElementById('modal-actions');
-    actionsDiv.innerHTML = `<button class="modal-btn" id="confirmCloseNo">CANCEL</button><button class="modal-btn" id="confirmCloseYes">CLOSE</button>`;
-    showModalWithAnimation(overlay);
-    
-    document.getElementById('confirmCloseNo').onclick = () => {
-        animateModalClose(overlay);
-    };
-    
-    document.getElementById('confirmCloseYes').onclick = () => {
-        animateModalClose(overlay, () => {
-            const chat = activeChats.get(peerId);
-            if (chat) {
-                if (chat.conn && chat.conn.open) {
-                    try { chat.conn.send({ type: 'peer_closed_chat', nick: myNick }); } catch(e) {}
-                    chat.conn.close();
+    function removeChat(peerId) {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('modal-text').innerHTML = `Close chat with ${escapeHtml(activeChats.get(peerId)?.displayName || peerId)}?<br><small style="color:#888;">All messages will be deleted</small>`;
+        const actionsDiv = document.getElementById('modal-actions');
+        actionsDiv.innerHTML = `<button class="modal-btn" id="confirmCloseNo">CANCEL</button><button class="modal-btn" id="confirmCloseYes">CLOSE</button>`;
+        showModalWithAnimation(overlay);
+        
+        document.getElementById('confirmCloseNo').onclick = () => {
+            animateModalClose(overlay);
+        };
+        
+        document.getElementById('confirmCloseYes').onclick = () => {
+            animateModalClose(overlay, () => {
+                const chat = activeChats.get(peerId);
+                if (chat) {
+                    if (chat.conn && chat.conn.open) {
+                        try { chat.conn.send({ type: 'peer_closed_chat', nick: myNick }); } catch(e) {}
+                        chat.conn.close();
+                    }
+                    activeChats.delete(peerId);
+                    saveAllChats();
+                    if (currentChatPeer === peerId) {
+                        currentChatPeer = null;
+                        currentConn = null;
+                        chatMessagesDiv.innerHTML = '';
+                        lastDateLabel = '';
+                        updateStatus('ONLINE', '#da8f27');
+                        switchToHomeMode();
+                    }
+                    updateChatsListUI();
                 }
-                activeChats.delete(peerId);
-                saveAllChats();
-                if (currentChatPeer === peerId) {
-                    currentChatPeer = null;
-                    currentConn = null;
-                    chatMessagesDiv.innerHTML = '';
-                    lastDateLabel = '';
-                    updateStatus('ONLINE', '#da8f27');
-                    switchToHomeMode();
-                }
-                updateChatsListUI();
-            }
-        });
-    };
-}
+            });
+        };
+    }
     
     function connectToPeer() {
         if (!peer) { showAlert("Initializing... Please wait"); return; }
@@ -1698,43 +1908,46 @@ function removeChat(peerId) {
         const input = document.getElementById('msgInput');
         const text = input.value.trim();
         if (text === "") return;
+        
+        const msgId = `msg_${Date.now()}_${Math.random()}`;
+        
         if (currentConn && currentConn.open) {
-            const msgId = `msg_${Date.now()}_${Math.random()}`;
             currentConn.send({ type: 'text', data: text, msgId: msgId });
-            addMsgToChat(text, 'my', 'text', null, msgId);
-            const chat = activeChats.get(currentChatPeer);
-            if (chat) {
-                chat.lastMessage = text.length > 30 ? text.substring(0,27)+'...' : text;
-                if (!chat.history) chat.history = [];
-                chat.history.push({ data: text, side: 'my', type: 'text', time: Date.now(), msgId: msgId });
-                if (chat.history.length > 50) chat.history.shift();
-                saveAllChats();
-                updateChatsListUI();
-            }
-            input.value = '';
         }
+        
+        addMsgToChat(text, 'my', 'text', null, msgId);
+        const chat = activeChats.get(currentChatPeer);
+        if (chat) {
+            chat.lastMessage = text.length > 30 ? text.substring(0,27)+'...' : text;
+            if (!chat.history) chat.history = [];
+            chat.history.push({ data: text, side: 'my', type: 'text', time: Date.now(), msgId: msgId });
+            if (chat.history.length > 50) chat.history.shift();
+            saveAllChats();
+            updateChatsListUI();
+        }
+        input.value = '';
     }
     
     function sendFile(file) {
         if (!file) return;
-        if (currentConn && currentConn.open) {
-            const reader = new FileReader();
-            reader.onload = (ev) => { 
-                const msgId = `msg_${Date.now()}_${Math.random()}`;
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+            const msgId = `msg_${Date.now()}_${Math.random()}`;
+            if (currentConn && currentConn.open) {
                 currentConn.send({ type: 'image', data: ev.target.result, msgId: msgId });
-                addMsgToChat(ev.target.result, 'my', 'image', null, msgId);
-                const chat = activeChats.get(currentChatPeer);
-                if (chat) {
-                    chat.lastMessage = '✿ Photo';
-                    if (!chat.history) chat.history = [];
-                    chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: Date.now(), msgId: msgId });
-                    if (chat.history.length > 50) chat.history.shift();
-                    saveAllChats();
-                    updateChatsListUI();
-                }
-            };
-            reader.readAsDataURL(file);
-        }
+            }
+            addMsgToChat(ev.target.result, 'my', 'image', null, msgId);
+            const chat = activeChats.get(currentChatPeer);
+            if (chat) {
+                chat.lastMessage = '✿ Photo';
+                if (!chat.history) chat.history = [];
+                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: Date.now(), msgId: msgId });
+                if (chat.history.length > 50) chat.history.shift();
+                saveAllChats();
+                updateChatsListUI();
+            }
+        };
+        reader.readAsDataURL(file);
     }
     
     async function toggleRecord() {
@@ -1757,19 +1970,19 @@ function removeChat(peerId) {
                 const blob = new Blob(audioChunks, { type: 'audio/webm' });
                 const reader = new FileReader();
                 reader.onload = (ev) => { 
+                    const msgId = `msg_${Date.now()}_${Math.random()}`;
                     if (currentConn && currentConn.open) {
-                        const msgId = `msg_${Date.now()}_${Math.random()}`;
                         currentConn.send({ type: 'audio', data: ev.target.result, msgId: msgId });
-                        addMsgToChat(ev.target.result, 'my', 'audio', null, msgId);
-                        const chat = activeChats.get(currentChatPeer);
-                        if (chat) {
-                            chat.lastMessage = '♪ Voice';
-                            if (!chat.history) chat.history = [];
-                            chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: Date.now(), msgId: msgId });
-                            if (chat.history.length > 50) chat.history.shift();
-                            saveAllChats();
-                            updateChatsListUI();
-                        }
+                    }
+                    addMsgToChat(ev.target.result, 'my', 'audio', null, msgId);
+                    const chat = activeChats.get(currentChatPeer);
+                    if (chat) {
+                        chat.lastMessage = '♪ Voice';
+                        if (!chat.history) chat.history = [];
+                        chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: Date.now(), msgId: msgId });
+                        if (chat.history.length > 50) chat.history.shift();
+                        saveAllChats();
+                        updateChatsListUI();
                     }
                 };
                 reader.readAsDataURL(blob);
@@ -1779,8 +1992,150 @@ function removeChat(peerId) {
             if (micImg) micImg.src = "image/stop.png";
         } catch(err) { showAlert("Mic access denied"); }
     }
-    
-    // ========== МОДАЛЬНЫЕ ОКНА ==========
+
+    async function startAudioCall() {
+        if (!currentChatPeer) return;
+        const chat = activeChats.get(currentChatPeer);
+        if (!chat) return;
+
+        try {
+            localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            setupCallUI(chat, "Calling...");
+            playDialingSound(); // Включаем звук гудков у инициатора
+            
+            const call = peer.call(currentChatPeer, localAudioStream);
+            handleCallEvents(call);
+        } catch (err) {
+            console.error("Call error:", err);
+            showAlert("Could not access microphone for call");
+        }
+    }
+
+    function handleIncomingCall(incomingCall) {
+        const callerId = incomingCall.peer;
+        if (!activeChats.has(callerId)) {
+            activeChats.set(callerId, {
+                conn: null,
+                nick: callerId,
+                avatar: 'image/ava1.png',
+                status: 'online',
+                displayName: callerId,
+                unreadCount: 0,
+                lastMessage: '---',
+                history: []
+            });
+            saveAllChats();
+            updateChatsListUI();
+        }
+
+        const chat = activeChats.get(callerId);
+        
+        document.getElementById('incomingCallPeerAvatar').src = chat.avatar || 'image/ava1.png';
+        document.getElementById('incomingCallPeerName').innerText = chat.displayName || chat.nick;
+        
+        const incomingOverlay = document.getElementById('incomingCallModalOverlay');
+        incomingOverlay.classList.add('active');
+        
+        playRingingSound(); // Включаем рингтон у принимающего
+
+        const rejectBtn = document.getElementById('rejectCallBtn');
+        const acceptBtn = document.getElementById('acceptCallBtn');
+
+        // Кнопка отклонения (слева) с уведомлением инициатора
+        rejectBtn.onclick = () => {
+            stopRingingSound();
+            incomingOverlay.classList.remove('active');
+            
+            // Пытаемся отправить сигнал сброса через активное соединение чата, если оно открыто
+            if (chat.conn && chat.conn.open) {
+                chat.conn.send({ type: 'call_rejected' });
+            }
+            incomingCall.close();
+        };
+
+        // Кнопка принятия звонка (справа)
+        acceptBtn.onclick = () => {
+            stopRingingSound();
+            incomingOverlay.classList.remove('active');
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
+                localAudioStream = stream;
+                setupCallUI(chat, "Connected");
+                incomingCall.answer(localAudioStream);
+                handleCallEvents(incomingCall);
+            }).catch(e => {
+                showAlert("Microphone access required for calls");
+                incomingCall.close();
+            });
+        };
+    }
+
+    function handleCallEvents(call) {
+        currentCall = call;
+        isMicMuted = false;
+        document.getElementById('muteMicBtn').classList.remove('active-state');
+        document.getElementById('muteMicImg').src = "image/mic.png";
+
+        call.on('stream', (remoteStream) => {
+            stopDialingSound(); // Выключаем гудки при соединении
+            stopRingingSound();
+            document.getElementById('callStatusText').innerText = "Connected";
+            const remoteAudio = document.getElementById('remoteAudio');
+            remoteAudio.srcObject = remoteStream;
+            remoteAudio.play().catch(e => console.log(e));
+        });
+
+        call.on('close', () => {
+            closeCallModal();
+        });
+
+        call.on('error', (err) => {
+            console.error(err);
+            closeCallModal();
+        });
+    }
+
+    function setupCallUI(chat, statusText) {
+        document.getElementById('callPeerAvatar').src = chat.avatar || 'image/ava1.png';
+        document.getElementById('callPeerName').innerText = chat.displayName || chat.nick;
+        document.getElementById('callStatusText').innerText = statusText;
+        document.getElementById('callModalOverlay').classList.add('active');
+    }
+
+    function toggleCallMute() {
+        if (!localAudioStream) return;
+        isMicMuted = !isMicMuted;
+        localAudioStream.getAudioTracks().forEach(track => {
+            track.enabled = !isMicMuted;
+        });
+        const muteBtn = document.getElementById('muteMicBtn');
+        const muteImg = document.getElementById('muteMicImg');
+        if (isMicMuted) {
+            muteBtn.classList.add('active-state');
+            muteImg.src = "image/micoff.png";
+        } else {
+            muteBtn.classList.remove('active-state');
+            muteImg.src = "image/mic.png";
+        }
+    }
+
+    function endAudioCall() {
+        if (currentCall) {
+            currentCall.close();
+            currentCall = null;
+        }
+        closeCallModal();
+    }
+
+    function closeCallModal() {
+        stopDialingSound();
+        stopRingingSound();
+        if (localAudioStream) {
+            localAudioStream.getTracks().forEach(track => track.stop());
+            localAudioStream = null;
+        }
+        document.getElementById('callModalOverlay').classList.remove('active');
+        document.getElementById('incomingCallModalOverlay').classList.remove('active');
+    }
     
     function animateModalClose(modalElement, callback) {
         const modalContent = modalElement.querySelector('.modal');
@@ -1889,56 +2244,54 @@ function removeChat(peerId) {
         reader.readAsDataURL(file);
     };
     
-function openPeerProfile() {
-    const peerId = currentChatPeer;
-    if (!peerId) return;
-    const chat = activeChats.get(peerId);
-    if (!chat) return;
-    
-    const currentDisplayName = chat.displayName || chat.nick;
-    
-    document.getElementById('peerModalAvatar').src = chat.avatar || 'image/ava1.png';
-    document.getElementById('editPeerDisplayName').value = currentDisplayName;
-    document.getElementById('realNickDisplay').innerHTML = 'ID: ' + escapeHtml(chat.nick);
-    
-    showModalWithAnimation(document.getElementById('peerProfileModal'));
-    
-    const cancelBtn = document.getElementById('cancelPeerEdit');
-    const saveBtn = document.getElementById('savePeerDisplayNameBtn');
-    
-    const newCancelBtn = cancelBtn.cloneNode(true);
-    const newSaveBtn = saveBtn.cloneNode(true);
-    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-    
-    newCancelBtn.onclick = () => {
-        animateModalClose(document.getElementById('peerProfileModal'));
-    };
-    
-    newSaveBtn.onclick = () => {
-        const newDisplayName = document.getElementById('editPeerDisplayName').value.trim();
+    function openPeerProfile() {
+        const peerId = currentChatPeer;
+        if (!peerId) return;
+        const chat = activeChats.get(peerId);
+        if (!chat) return;
         
-        if (newDisplayName === "") {
-            chat.displayName = chat.nick;
-            localStorage.removeItem(`display_name_${peerId}`);
-        } else {
-            chat.displayName = newDisplayName;
-            localStorage.setItem(`display_name_${peerId}`, newDisplayName);
-        }
+        const currentDisplayName = chat.displayName || chat.nick;
         
-        if (currentChatPeer === peerId) {
-            peerNickChat.innerText = chat.displayName;
-        }
+        document.getElementById('peerModalAvatar').src = chat.avatar || 'image/ava1.png';
+        document.getElementById('editPeerDisplayName').value = currentDisplayName;
+        document.getElementById('realNickDisplay').innerHTML = 'ID: ' + escapeHtml(chat.nick);
         
-        updateChatsListUI();
-        saveAllChats();
-        animateModalClose(document.getElementById('peerProfileModal'));
-    };
-}
+        showModalWithAnimation(document.getElementById('peerProfileModal'));
+        
+        const cancelBtn = document.getElementById('cancelPeerEdit');
+        const saveBtn = document.getElementById('savePeerDisplayNameBtn');
+        
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newSaveBtn = saveBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        
+        newCancelBtn.onclick = () => {
+            animateModalClose(document.getElementById('peerProfileModal'));
+        };
+        
+        newSaveBtn.onclick = () => {
+            const newDisplayName = document.getElementById('editPeerDisplayName').value.trim();
+            
+            if (newDisplayName === "") {
+                chat.displayName = chat.nick;
+                localStorage.removeItem(`display_name_${peerId}`);
+            } else {
+                chat.displayName = newDisplayName;
+                localStorage.setItem(`display_name_${peerId}`, newDisplayName);
+            }
+            
+            if (currentChatPeer === peerId) {
+                peerNickChat.innerText = chat.displayName;
+            }
+            
+            updateChatsListUI();
+            saveAllChats();
+            animateModalClose(document.getElementById('peerProfileModal'));
+        };
+    }
     
     let tempAvatar = myAvatar;
-    
-    // ========== ИНИЦИАЛИЗАЦИЯ ==========
     
     function startWithNick(nick, fromRegistration = true) {
         if (peer) peer.destroy();
@@ -1993,11 +2346,13 @@ function openPeerProfile() {
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
+
+        peer.on('call', (incomingCall) => {
+            handleIncomingCall(incomingCall);
+        });
         
         updateStatus('CONNECTING...', '#b0b0b0');
     }
-    
-    // ========== ОБРАБОТЧИКИ ==========
     
     document.getElementById('regSubmitBtn').onclick = () => {
         const newNick = document.getElementById('regNickInput').value.trim();
@@ -2098,6 +2453,10 @@ function openPeerProfile() {
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
+
+        peer.on('call', (incomingCall) => {
+            handleIncomingCall(incomingCall);
+        });
     };
     
     document.getElementById('backHomeBtn').addEventListener('click', switchToHomeMode);
@@ -2110,7 +2469,6 @@ function openPeerProfile() {
         if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
     });
     
-    // Drag and drop
     const dropOverlay = document.getElementById('dropOverlay');
     window.addEventListener('dragover', (e) => { e.preventDefault(); });
     window.addEventListener('dragenter', (e) => {
@@ -2146,8 +2504,6 @@ function openPeerProfile() {
         }
     });
     
-    // ========== ЗАПУСК ==========
-    
     if(!myNick || !isValidNick(myNick)) {
         showRegistrationModal();
     } else {
@@ -2164,25 +2520,6 @@ function openPeerProfile() {
         if (currentConn && currentConn.open) currentConn.close();
         if (peer) peer.destroy();
     });
-</script>
-
-<script>
-// Реєстрація Service Worker
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-        console.log('SW registered:', reg);
-    }).catch(err => {
-        console.log('SW error:', err);
-    });
-}
-
-// Перевірка PWA встановлення
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    console.log('PWA can be installed');
-});
 </script>
 </body>
 </html>
