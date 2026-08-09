@@ -5,13 +5,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SOC">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-title" content="SOC">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     <title>SOC.</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -23,7 +21,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Исправление для iOS PWA: используем фиксацию на всю высоту экрана с учетом safe-area */
         body, html {
             height: 100%;
             height: 100vh;
@@ -118,16 +115,15 @@
             height: 100vh;
             height: 100dvh;
             width: 100%;
-            max-width: 800px;
+            max-width: 100%;
             margin: 0 auto;
             background: #000000;
-            /* Исправление верхней зоны для iPhone (Dynamic Island / челка) */
             padding-top: env(safe-area-inset-top);
             opacity: 0;
             transition: opacity 0.4s ease;
             position: relative;
             overflow-x: hidden;
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+            box-shadow: none;
         }
         .app.app-visible { opacity: 1; }
 
@@ -148,19 +144,19 @@
         .chat-screen {
             position: absolute;
             top: 0;
-            right: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
             background: #000000;
             transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            transform: translateX(100%);
+            transform: translateX(-100%);
             z-index: 20;
         }
         
         .home-screen.chat-open {
-            transform: translateX(-30%);
+            transform: translateX(30%);
         }
         
         .chat-screen.chat-visible {
@@ -186,6 +182,11 @@
             -webkit-background-clip: text;
             color: transparent;
         }
+        .header-right-side {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         #status {
             font-size: 0.65rem;
             font-weight: 600;
@@ -194,6 +195,47 @@
             border-radius: 40px;
             color: #bbb;
             border: 0.5px solid #2c2c2c;
+        }
+
+        .call-banner-widget {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: #151515;
+            border: 1px solid #3a3a3a;
+            padding: 4px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transform-origin: right center;
+            animation: callBannerMinimizeIn 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards, subtlePulse 1.5s infinite ease;
+        }
+        .call-banner-widget.hiding {
+            animation: callBannerMinimizeOut 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .call-banner-widget.active {
+            display: flex;
+        }
+        .call-banner-widget:hover {
+            transform: scale(0.96);
+            background: #222;
+            color: #ffffff;
+        }
+        .call-banner-text {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #ccc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes callBannerMinimizeIn {
+            0% { opacity: 0; transform: scale(0.3) translateX(20px); }
+            100% { opacity: 1; transform: scale(1) translateX(0); }
+        }
+        @keyframes callBannerMinimizeOut {
+            0% { opacity: 1; transform: scale(1) translateX(0); }
+            100% { opacity: 0; transform: scale(0.3) translateX(20px); }
         }
 
         .home-scrollable {
@@ -371,7 +413,6 @@
             gap: 15px;
             min-height: 150px;
         }
-        .not-connect-placeholder span:first-child { font-size: 2rem; opacity: 0.3; }
 
         .rules-bottom-btn {
             margin: 20px;
@@ -577,7 +618,6 @@
             background: #0a0a0a;
             border-top: 1px solid #1f1f1f;
             flex-shrink: 0;
-            /* Исправление нижней зоны для iPhone (Home Indicator / полоска снизу) */
             padding-bottom: max(12px, env(safe-area-inset-bottom)); 
             display: flex;
             gap: 8px;
@@ -882,36 +922,61 @@
         }
         .reg-rules-btn:hover { color: #ffffff; }
 
-        @media (min-width: 801px) {
-            body, html { background: #000000; }
-            .app {
-                box-shadow: -2px 0 5px rgba(255,255,255,0.02), 2px 0 5px rgba(255,255,255,0.02);
-                border-left: 1px solid #1a1a1a;
-                border-right: 1px solid #1a1a1a;
-            }
-            .app-wrapper::before, .app-wrapper::after {
-                content: '';
-                position: fixed;
-                top: 0;
-                bottom: 0;
-                width: calc((100% - 800px) / 2);
-                background: #000000;
-                z-index: 5;
-                pointer-events: none;
-            }
-            .app-wrapper::before { left: 0; }
-            .app-wrapper::after { right: 0; }
+        body.is-pc .app {
+            max-width: 100% !important;
+            flex-direction: row;
+            box-shadow: none;
+            border-left: none;
+            border-right: none;
         }
-        @media (max-width: 800px) {
-            .app-wrapper::before, .app-wrapper::after { display: none; }
-            .app { border-left: none; border-right: none; box-shadow: none; }
+        body.is-pc .app-wrapper::before, body.is-pc .app-wrapper::after { display: none; }
+
+        body.is-pc .chat-screen {
+            position: relative;
+            transform: none !important;
+            flex: 1; 
+            height: 100%;
+            border-right: 1px solid #1a1a1a;
+            z-index: 5;
+        }
+        body.is-pc .home-screen {
+            position: relative;
+            transform: none !important;
+            width: 420px; 
+            height: 100%;
+            flex-shrink: 0;
+            z-index: 10;
+            border-left: 1px solid #1a1a1a;
+        }
+        body.is-pc .chat-screen .back-home-btn {
+            display: none !important;
         }
 
-        #chatMessages::-webkit-scrollbar { width: 3px; }
-        #chatMessages::-webkit-scrollbar-track { background: transparent; }
-        #chatMessages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 10px; }
-        #chatMessages::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
-        #chatMessages { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) transparent; }
+        body.is-mobile-or-tablet .app-wrapper::before, body.is-mobile-or-tablet .app-wrapper::after { display: none; }
+        body.is-mobile-or-tablet .app { border-left: none; border-right: none; box-shadow: none; }
+
+        #chatMessages::-webkit-scrollbar,
+        .home-scrollable::-webkit-scrollbar {
+            width: 5px;
+        }
+        #chatMessages::-webkit-scrollbar-track,
+        .home-scrollable::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chatMessages::-webkit-scrollbar-thumb,
+        .home-scrollable::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        #chatMessages::-webkit-scrollbar-thumb:hover,
+        .home-scrollable::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        #chatMessages,
+        .home-scrollable {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
 
         * {
             -webkit-tap-highlight-color: transparent;
@@ -1006,21 +1071,6 @@
             margin: 0 !important;
         }
 
-        .chat-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background: #000000;
-            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            transform: translateX(100%);
-            z-index: 20;
-        }
-
-        /* Modal Call Overlay Style */
         .call-modal-overlay {
             position: fixed;
             top: 0;
@@ -1034,6 +1084,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: opacity 0.25s ease;
         }
         .call-modal-overlay.active {
             display: flex;
@@ -1051,7 +1102,49 @@
             text-align: center;
             animation: modalPopIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            position: relative;
+            transform-origin: center;
         }
+        
+        .call-modal-content.minimizing {
+            animation: callModalMinimize 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        }
+
+        @keyframes callModalMinimize {
+            0% { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(0.1) translate(120px, -250px); }
+        }
+
+        .call-minimize-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #151515;
+            border: 1px solid #3a3a3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .call-minimize-btn img {
+            width: 16px;
+            height: 16px;
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+        .call-minimize-btn:hover {
+            transform: scale(0.96);
+            background: #222;
+            color: #ffffff;
+        }
+        .call-minimize-btn:hover img {
+            opacity: 1;
+        }
+
         .call-avatar-container {
             width: 90px;
             height: 90px;
@@ -1097,13 +1190,13 @@
             max-height: 54px !important;
             border-radius: 50% !important;
             border: 1px solid #3a3a3a;
-            background: #1a1a1a;
+            background: #151515;
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             flex-shrink: 0;
             padding: 0;
         }
@@ -1116,41 +1209,51 @@
             max-height: 22px !important;
             object-fit: contain;
             filter: brightness(0) invert(1);
-            opacity: 0.9;
+            opacity: 0.8;
             display: block;
             margin: auto;
         }
         .call-ctrl-btn:hover {
-            transform: scale(0.95);
-            background: #2a2a2a;
+            transform: scale(0.96);
+            background: #222;
+            color: #ffffff;
         }
-        .call-ctrl-btn.end-call {
-            background: #d9534f;
-            border-color: #d9534f;
+        .call-ctrl-btn:hover img {
+            opacity: 1;
         }
-        .call-ctrl-btn.end-call:hover {
-            background: #c9302c;
-        }
+        
+        .call-ctrl-btn.end-call,
         .call-ctrl-btn.accept-call {
-            background: #2ecc2e;
-            border-color: #2ecc2e;
+            background: #151515;
+            border-color: #3a3a3a;
         }
-        .call-ctrl-btn.accept-call:hover {
-            background: #27ae60;
-        }
+        .call-ctrl-btn.end-call img,
         .call-ctrl-btn.accept-call img {
             filter: brightness(0) invert(1);
+            opacity: 0.8;
         }
+        .call-ctrl-btn.end-call:hover,
+        .call-ctrl-btn.accept-call:hover {
+            transform: scale(0.96);
+            background: #222;
+            border-color: #3a3a3a;
+        }
+        .call-ctrl-btn.end-call:hover img,
+        .call-ctrl-btn.accept-call:hover img {
+            opacity: 1;
+        }
+
         .call-ctrl-btn.active-state {
-            background: #fff;
+            background: #222;
+            border-color: #3a3a3a;
         }
         .call-ctrl-btn.active-state img {
-            filter: brightness(0);
+            filter: brightness(0) invert(1);
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-<!-- Звуки вызова и сообщений -->
 <audio id="dialingSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" loop preload="auto"></audio>
 <audio id="ringingSound" src="https://assets.mixkit.co/active_storage/sfx/2865/2865-preview.mp3" loop preload="auto"></audio>
 <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
@@ -1166,10 +1269,52 @@
 
 <div class="app-wrapper">
     <div class="app" id="mainApp">
+        <div class="chat-screen" id="chatScreen">
+            <div class="chat-header" id="chatHeader" style="display: none;">
+                <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
+                    <img src="image/phone.png" alt="Call" draggable="false">
+                </button>
+                <div class="chat-peer-info-center">
+                    <div class="peer-info-button" id="peerInfoBtn">
+                        <div class="peer-info-avatar" style="position:relative;">
+                            <img id="peerAvatarImg" src="image/ava1.png" draggable="false">
+                            <span class="status-dot" id="peerStatusDot"></span>
+                        </div>
+                        <div class="peer-info-nick" id="peerNickChat">friend</div>
+                    </div>
+                </div>
+                <button class="back-home-btn" id="backHomeBtn">
+                    <img src="image/back.png" alt="←" draggable="false">
+                </button>
+            </div>
+            
+            <div id="noActiveChatLeft" style="flex:1; display:flex; align-items:center; justify-content:center; color:#444; font-size:0.9rem; text-transform:uppercase; letter-spacing:2px; flex-direction:column; gap:15px;">
+                <span>NO ACTIVE CHAT</span>
+            </div>
+
+            <div id="chatMessages" style="display:none;"></div>
+            
+            <div class="input-area" id="chatInputArea" style="display:none;">
+                <button class="btn-icon" onclick="document.getElementById('fileInput').click()"><img src="image/plus.png" alt="+" class="btn-img" draggable="false"></button>
+                <button class="btn-icon" id="recordBtn" onclick="toggleRecord()"><img src="image/mic.png" alt="V" class="btn-img" id="mic-icon" draggable="false"></button>
+                <input type="text" id="msgInput" placeholder="Message..." onkeypress="if(event.key==='Enter') sendText()" autocomplete="off">
+                <button class="btn-icon send-btn" onclick="sendText()"><img src="image/send.png" alt=">" class="btn-img" draggable="false"></button>
+            </div>
+            <button id="scrollDownBtn" class="scroll-down-btn">
+                <img src="image/down.png" alt="↓" draggable="false">
+            </button>
+        </div>
+
         <div class="home-screen" id="homeScreen">
             <div class="home-header">
                 <h1>SOC.</h1>
-                <span id="status">OFFLINE</span>
+                <div class="header-right-side">
+                    <div class="call-banner-widget" id="callBannerWidget" onclick="restoreCallModal()" title="Expand call">
+                        <img src="image/phone.png" alt="Call" style="width:14px; height:14px; filter:brightness(0) invert(1); opacity:0.8;">
+                        <span class="call-banner-text">Call •••</span>
+                    </div>
+                    <span id="status">OFFLINE</span>
+                </div>
             </div>
 
             <div id="connectSection" class="connect-section">
@@ -1188,48 +1333,17 @@
             <div class="home-scrollable">
                 <div id="chatsListContainer" style="margin: 10px 20px; display: flex; flex-direction: column; gap: 8px;"></div>
                 <div id="notConnectedPlaceholder" class="not-connect-placeholder"> 
-                    <span>NO ACTIVE CHATS</span>
+                    <span>NO CHATS</span>
                 </div>
             </div>
             <div class="rules-bottom-btn" style="margin: 10px 20px;" onclick="showRulesFromHome()">RULES & DISCLAIMER</div>
         </div>
 
-        <div class="chat-screen" id="chatScreen">
-            <div class="chat-header">
-                <button class="back-home-btn" id="backHomeBtn">
-                    <img src="image/back.png" alt="←" draggable="false">
-                </button>
-                <div class="chat-peer-info-center">
-                    <div class="peer-info-button" id="peerInfoBtn">
-                        <div class="peer-info-avatar" style="position:relative;">
-                            <img id="peerAvatarImg" src="image/ava1.png" draggable="false">
-                            <span class="status-dot" id="peerStatusDot"></span>
-                        </div>
-                        <div class="peer-info-nick" id="peerNickChat">friend</div>
-                    </div>
-                </div>
-                <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
-                    <img src="image/phone.png" alt="Call" draggable="false">
-                </button>
-            </div>
-            <div id="chatMessages"></div>
-            <div class="input-area">
-                <button class="btn-icon" onclick="document.getElementById('fileInput').click()"><img src="image/plus.png" alt="+" class="btn-img" draggable="false"></button>
-                <button class="btn-icon" id="recordBtn" onclick="toggleRecord()"><img src="image/mic.png" alt="V" class="btn-img" id="mic-icon" draggable="false"></button>
-                <input type="text" id="msgInput" placeholder="Message..." onkeypress="if(event.key==='Enter') sendText()" autocomplete="off">
-                <button class="btn-icon send-btn" onclick="sendText()"><img src="image/send.png" alt=">" class="btn-img" draggable="false"></button>
-            </div>
-            <button id="scrollDownBtn" class="scroll-down-btn">
-                <img src="image/down.png" alt="↓" draggable="false">
-            </button>
-        </div>
-
     </div>
 </div>
 
-<!-- Modal Call Window Overlay (Incoming Call) -->
 <div class="call-modal-overlay" id="incomingCallModalOverlay">
-    <div class="call-modal-content">
+    <div class="call-modal-content" id="incomingCallModalContent">
         <div class="call-avatar-container">
             <img id="incomingCallPeerAvatar" src="image/ava1.png" alt="avatar">
         </div>
@@ -1248,9 +1362,11 @@
     </div>
 </div>
 
-<!-- Active Call Window Overlay -->
 <div class="call-modal-overlay" id="callModalOverlay">
-    <div class="call-modal-content">
+    <div class="call-modal-content" id="activeCallModalContent">
+        <button class="call-minimize-btn" onclick="minimizeCallModal('active')" title="Minimize">
+            <img src="image/exit.png" alt="Minimize" draggable="false">
+        </button>
         <div class="call-avatar-container">
             <img id="callPeerAvatar" src="image/ava1.png" alt="avatar">
         </div>
@@ -1322,6 +1438,19 @@
 <input type="file" id="fileInput" hidden accept="image/*" onchange="sendFile(this.files[0])">
 
 <script>
+    function detectDeviceType() {
+        const ua = navigator.userAgent;
+        const isTablet = /(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|(puffin(?!.*ip(ad|hone))))/i.test(ua);
+        const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        
+        if (isTablet || isMobile) {
+            document.body.classList.add('is-mobile-or-tablet');
+        } else {
+            document.body.classList.add('is-pc');
+        }
+    }
+    detectDeviceType();
+
     let myNick = localStorage.getItem('soc-nickname');
     let myAvatar = localStorage.getItem('soc-avatar') || 'image/ava1.png';
     let myStatus = localStorage.getItem('soc-status') || 'online';
@@ -1341,13 +1470,17 @@
     let currentCall = null;
     let localAudioStream = null;
     let isMicMuted = false;
+    let activeCallType = null;
     
     const homeScreen = document.getElementById('homeScreen');
     const chatScreen = document.getElementById('chatScreen');
+    const chatHeader = document.getElementById('chatHeader');
     const homeNickSpan = document.getElementById('homeNick');
     const homeStatusSpan = document.getElementById('homeStatus');
     const homeAvatarImg = document.getElementById('homeAvatarImg');
     const chatMessagesDiv = document.getElementById('chatMessages');
+    const noActiveChatLeft = document.getElementById('noActiveChatLeft');
+    const chatInputArea = document.getElementById('chatInputArea');
     const peerNickChat = document.getElementById('peerNickChat');
     const peerAvatarChat = document.getElementById('peerAvatarImg');
     const connectSection = document.getElementById('connectSection');
@@ -1686,8 +1819,16 @@
     
     function switchToChatMode() {
         isChatOpen = true;
-        homeScreen.classList.add('chat-open');
-        chatScreen.classList.add('chat-visible');
+        chatHeader.style.display = 'flex';
+        noActiveChatLeft.style.display = 'none';
+        chatMessagesDiv.style.display = 'flex';
+        chatInputArea.style.display = 'flex';
+
+        if (document.body.classList.contains('is-mobile-or-tablet')) {
+            homeScreen.classList.add('chat-open');
+            chatScreen.classList.add('chat-visible');
+        }
+
         setTimeout(() => {
             document.getElementById('msgInput').focus();
             if (chatMessagesDiv) {
@@ -1699,13 +1840,20 @@
     
     function switchToHomeMode() {
         isChatOpen = false;
-        homeScreen.classList.remove('chat-open');
-        chatScreen.classList.remove('chat-visible');
+        chatHeader.style.display = 'none';
+        noActiveChatLeft.style.display = 'flex';
+        chatMessagesDiv.style.display = 'none';
+        chatInputArea.style.display = 'none';
+
+        if (document.body.classList.contains('is-mobile-or-tablet')) {
+            homeScreen.classList.remove('chat-open');
+            chatScreen.classList.remove('chat-visible');
+        }
         updateChatsListUI();
     }
     
     function checkScrollPosition() {
-        if (!chatMessagesDiv) return;
+        if (!chatMessagesDiv || chatMessagesDiv.style.display === 'none') return;
         const isNearBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 100;
         if (!isNearBottom && !isUserScrolling) scrollDownBtn.classList.add('visible');
         else scrollDownBtn.classList.remove('visible');
@@ -1887,7 +2035,12 @@
     function connectToPeer() {
         if (!peer) { showAlert("Initializing... Please wait"); return; }
         const friendNick = document.getElementById('peer-nick-input').value.trim();
-        if (!friendNick) { showAlert("Enter friend's nickname"); return; }
+        
+        if (!friendNick || friendNick.length < 3) { 
+            showAlert("Nickname must be at least 3 characters long"); 
+            return; 
+        }
+        
         if (friendNick === myNick) { showAlert("You cannot connect to yourself"); return; }
         if (activeChats.has(friendNick)) { openChat(friendNick); return; }
         if (activeChats.size >= 30) { showAlert("Maximum 30 simultaneous chats"); return; }
@@ -2040,6 +2193,7 @@
         
         const incomingOverlay = document.getElementById('incomingCallModalOverlay');
         incomingOverlay.classList.add('active');
+        activeCallType = 'incoming';
         
         playRingingSound();
 
@@ -2049,6 +2203,8 @@
         rejectBtn.onclick = () => {
             stopRingingSound();
             incomingOverlay.classList.remove('active');
+            activeCallType = null;
+            document.getElementById('callBannerWidget').classList.remove('active');
             
             if (chat.conn && chat.conn.open) {
                 chat.conn.send({ type: 'call_rejected' });
@@ -2100,7 +2256,47 @@
         document.getElementById('callPeerAvatar').src = chat.avatar || 'image/ava1.png';
         document.getElementById('callPeerName').innerText = chat.displayName || chat.nick;
         document.getElementById('callStatusText').innerText = statusText;
-        document.getElementById('callModalOverlay').classList.add('active');
+        const overlay = document.getElementById('callModalOverlay');
+        const modalContent = document.getElementById('activeCallModalContent');
+        modalContent.classList.remove('minimizing');
+        overlay.classList.add('active');
+        activeCallType = 'active';
+    }
+
+    function minimizeCallModal(type) {
+        let overlayId = type === 'incoming' ? 'incomingCallModalOverlay' : 'callModalOverlay';
+        let contentId = type === 'incoming' ? 'incomingCallModalContent' : 'activeCallModalContent';
+        let overlay = document.getElementById(overlayId);
+        let modalContent = document.getElementById(contentId);
+        
+        modalContent.classList.add('minimizing');
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            modalContent.classList.remove('minimizing');
+            const banner = document.getElementById('callBannerWidget');
+            banner.classList.remove('hiding');
+            banner.classList.add('active');
+        }, 220);
+    }
+
+    function restoreCallModal() {
+        const banner = document.getElementById('callBannerWidget');
+        banner.classList.add('hiding');
+        setTimeout(() => {
+            banner.classList.remove('active');
+            banner.classList.remove('hiding');
+            if (activeCallType === 'incoming') {
+                const overlay = document.getElementById('incomingCallModalOverlay');
+                const content = document.getElementById('incomingCallModalContent');
+                content.classList.remove('minimizing');
+                overlay.classList.add('active');
+            } else if (activeCallType === 'active') {
+                const overlay = document.getElementById('callModalOverlay');
+                const content = document.getElementById('activeCallModalContent');
+                content.classList.remove('minimizing');
+                overlay.classList.add('active');
+            }
+        }, 200);
     }
 
     function toggleCallMute() {
@@ -2137,6 +2333,11 @@
         }
         document.getElementById('callModalOverlay').classList.remove('active');
         document.getElementById('incomingCallModalOverlay').classList.remove('active');
+        document.getElementById('activeCallModalContent').classList.remove('minimizing');
+        document.getElementById('incomingCallModalContent').classList.remove('minimizing');
+        document.getElementById('callBannerWidget').classList.remove('active');
+        document.getElementById('callBannerWidget').classList.remove('hiding');
+        activeCallType = null;
     }
     
     function animateModalClose(modalElement, callback) {
@@ -2352,175 +2553,77 @@
         peer.on('call', (incomingCall) => {
             handleIncomingCall(incomingCall);
         });
-        
-        updateStatus('CONNECTING...', '#b0b0b0');
     }
-    
-    document.getElementById('regSubmitBtn').onclick = () => {
-        const newNick = document.getElementById('regNickInput').value.trim();
-        if (!isValidNick(newNick)) {
-            animateModalClose(document.getElementById('registrationModal'), () => { showValidationError('registration'); });
-            return;
-        }
-        animateModalClose(document.getElementById('registrationModal'), () => { startWithNick(newNick, true); });
-    };
-    
-    document.getElementById('regRulesBtn').onclick = () => {
-        animateModalClose(document.getElementById('registrationModal'), () => { showRules(true); });
-    };
-    
-    document.getElementById('mainProfileBtn').addEventListener('click', openProfileModal);
-    document.getElementById('modalAvatarClickArea').onclick = (e) => { e.stopPropagation(); openAvatarUploadFromProfile(); };
-    document.getElementById('cancelProfileBtn').onclick = () => { animateModalClose(document.getElementById('profileModal')); };
-    document.getElementById('saveProfileBtn').onclick = () => {
-        let newNick = document.getElementById('modalNickInput').value.trim();
-        let newAvatar = tempAvatar;
-        let newStatus = document.getElementById('modalStatusSelect').value;
-        
-        if (newNick === myNick || newNick === "") {
-            myAvatar = newAvatar;
-            myStatus = newStatus;
-            localStorage.setItem('soc-avatar', myAvatar);
-            localStorage.setItem('soc-status', myStatus);
-            updateHomeUI();
-            if (currentConn && currentConn.open) currentConn.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
-            animateModalClose(document.getElementById('profileModal'));
-            return;
-        }
-        
-        if (!isValidNick(newNick)) {
-            animateModalClose(document.getElementById('profileModal'), () => { showValidationError('profile'); });
-            return;
-        }
-        
-        animateModalClose(document.getElementById('profileModal'));
-        
-        let oldNick = myNick;
-        let oldAvatar = myAvatar;
-        let oldStatus = myStatus;
-        let oldPeer = peer;
-        
-        myNick = newNick;
-        myAvatar = newAvatar;
-        myStatus = newStatus;
-        localStorage.setItem('soc-nickname', myNick);
-        localStorage.setItem('soc-avatar', myAvatar);
-        localStorage.setItem('soc-status', myStatus);
-        updateHomeUI();
-        
-        if (peer) peer.destroy();
-        peer = new Peer(myNick, { debug: 2 });
-        
-        peer.on('open', () => {
-            updateStatus('ONLINE', '#da8f27');
-            if (currentConn && currentConn.open) currentConn.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
-            for (const [peerId, chat] of activeChats.entries()) {
-                if (chat.conn && chat.conn.open) chat.conn.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
-            }
-        });
-        
-        peer.on('error', (err) => {
-            if (err.type === 'unavailable-id') {
-                myNick = oldNick;
-                myAvatar = oldAvatar;
-                myStatus = oldStatus;
-                localStorage.setItem('soc-nickname', myNick);
-                localStorage.setItem('soc-avatar', myAvatar);
-                localStorage.setItem('soc-status', myStatus);
-                updateHomeUI();
-                if (peer) peer.destroy();
-                peer = oldPeer;
-                showNicknameTakenError('profile');
-            }
-        });
-        
-        peer.on('connection', (incomingConn) => {
-            const peerId = incomingConn.peer;
-            if (activeChats.has(peerId)) {
-                const existing = activeChats.get(peerId);
-                if (existing.conn && existing.conn.open) { incomingConn.close(); return; }
-            }
-            if (activeChats.size >= 30) { incomingConn.close(); return; }
-            activeChats.set(peerId, {
-                conn: incomingConn,
-                nick: peerId,
-                avatar: 'image/ava1.png',
-                status: 'online',
-                displayName: peerId,
-                unreadCount: 0,
-                lastMessage: '---',
-                history: []
-            });
-            saveAllChats();
-            setupConnectionForPeer(peerId, incomingConn);
-            updateChatsListUI();
-        });
 
-        peer.on('call', (incomingCall) => {
-            handleIncomingCall(incomingCall);
-        });
-    };
-    
-    document.getElementById('backHomeBtn').addEventListener('click', switchToHomeMode);
-    document.getElementById('peerInfoBtn').addEventListener('click', openPeerProfile);
-    
-    if (scrollDownBtn) scrollDownBtn.addEventListener('click', scrollToBottom);
-    if (chatMessagesDiv) chatMessagesDiv.addEventListener('scroll', onChatScroll);
-    
-    document.getElementById('peer-nick-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
-    });
-    
-    const dropOverlay = document.getElementById('dropOverlay');
-    window.addEventListener('dragover', (e) => { e.preventDefault(); });
-    window.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        if (chatScreen.classList.contains('chat-visible') && currentConn && currentConn.open) {
-            dropOverlay.classList.add('active');
-        }
-    });
-    window.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-            dropOverlay.classList.remove('active');
-        }
-    });
-    window.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropOverlay.classList.remove('active');
-        if (!chatScreen.classList.contains('chat-visible') || !currentConn || !currentConn.open) return;
-        const files = e.dataTransfer.files;
-        if (files.length > 0 && files[0].type.indexOf('image') !== -1) sendFile(files[0]);
-    });
-    
-    document.addEventListener('paste', (e) => {
-        if (!chatScreen.classList.contains('chat-visible') || !currentConn || !currentConn.open) return;
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let item of items) {
-            if (item.type.indexOf('image') !== -1) {
-                e.preventDefault();
-                const file = item.getAsFile();
-                if (file) sendFile(file);
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('preloader').classList.add('hide-preloader');
+        setTimeout(() => { document.getElementById('preloader').style.display = 'none'; }, 500);
+        document.getElementById('mainApp').classList.add('app-visible');
+
+        document.getElementById('backHomeBtn').onclick = () => switchToHomeMode();
+        document.getElementById('mainProfileBtn').onclick = openProfileModal;
+        document.getElementById('peerInfoBtn').onclick = openPeerProfile;
+        document.getElementById('modalAvatarClickArea').onclick = openAvatarUploadFromProfile;
+        
+        document.getElementById('cancelProfileBtn').onclick = () => animateModalClose(document.getElementById('profileModal'));
+        document.getElementById('saveProfileBtn').onclick = () => {
+            const newNick = document.getElementById('modalNickInput').value.trim();
+            const newStatus = document.getElementById('modalStatusSelect').value;
+            
+            if (!isValidNick(newNick)) {
+                animateModalClose(document.getElementById('profileModal'), () => showValidationError('profile'));
                 return;
             }
+            
+            if (newNick !== myNick) {
+                myNick = newNick;
+                localStorage.setItem('soc-nickname', myNick);
+                myAvatar = tempAvatar;
+                localStorage.setItem('soc-avatar', myAvatar);
+                myStatus = newStatus;
+                localStorage.setItem('soc-status', myStatus);
+                updateHomeUI();
+                animateModalClose(document.getElementById('profileModal'), () => startWithNick(myNick, true));
+            } else {
+                myAvatar = tempAvatar;
+                localStorage.setItem('soc-avatar', myAvatar);
+                myStatus = newStatus;
+                localStorage.setItem('soc-status', myStatus);
+                updateHomeUI();
+                animateModalClose(document.getElementById('profileModal'));
+                if (currentConn && currentConn.open) {
+                    currentConn.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
+                }
+            }
+        };
+
+        document.getElementById('regSubmitBtn').onclick = () => {
+            const nick = document.getElementById('regNickInput').value.trim();
+            if (!isValidNick(nick)) {
+                animateModalClose(document.getElementById('registrationModal'), () => showValidationError('registration'));
+                return;
+            }
+            animateModalClose(document.getElementById('registrationModal'), () => {
+                myNick = nick;
+                localStorage.setItem('soc-nickname', myNick);
+                updateHomeUI();
+                startWithNick(myNick, true);
+            });
+        };
+
+        document.getElementById('regRulesBtn').onclick = () => {
+            animateModalClose(document.getElementById('registrationModal'), () => showRules(true));
+        };
+
+        chatMessagesDiv.addEventListener('scroll', onChatScroll);
+        scrollDownBtn.onclick = scrollToBottom;
+
+        if (!myNick) {
+            showRegistrationModal();
+        } else {
+            updateHomeUI();
+            startWithNick(myNick, false);
         }
-    });
-    
-    if(!myNick || !isValidNick(myNick)) {
-        showRegistrationModal();
-    } else {
-        startWithNick(myNick, false);
-        updateHomeUI();
-    }
-    
-    setTimeout(() => {
-        document.getElementById('preloader').classList.add('hide-preloader');
-        document.getElementById('mainApp').classList.add('app-visible');
-    }, 2000);
-    
-    window.addEventListener('beforeunload', () => {
-        if (currentConn && currentConn.open) currentConn.close();
-        if (peer) peer.destroy();
     });
 </script>
 </body>
