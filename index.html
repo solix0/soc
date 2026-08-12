@@ -125,6 +125,7 @@
         }
         .app.app-visible { opacity: 1; }
 
+        /* Мобильный/планшетный режим по умолчанию */
         .home-screen {
             position: absolute;
             top: 0;
@@ -531,8 +532,8 @@
             transform: scale(1.05);
         }
         .reaction-badge.my-reaction {
-            background: rgba(70, 60, 110, 0.95);
-            border-color: #a0a0c0;
+            background: rgba(105, 105, 105, 0.95);
+            border-color: #b6b6b6;
         }
         .reaction-count {
             font-size: 0.7rem;
@@ -878,23 +879,40 @@
         @media (min-width: 801px) {
             body, html { background: #000000; }
             .app {
-                box-shadow: -2px 0 5px rgba(255,255,255,0.02), 2px 0 5px rgba(255,255,255,0.02);
-                border-left: 1px solid #1a1a1a;
-                border-right: 1px solid #1a1a1a;
+                max-width: 100% !important;
+                flex-direction: row !important;
+                box-shadow: none;
+                border: none;
             }
-            .app-wrapper::before, .app-wrapper::after {
-                content: '';
-                position: fixed;
-                top: 0;
-                bottom: 0;
-                width: calc((100% - 800px) / 2);
-                background: #000000;
-                z-index: 5;
-                pointer-events: none;
+            .app-wrapper::before, .app-wrapper::after { display: none !important; }
+            
+            /* Десктопный режим: левая колонка (список чатов/профиль) */
+            .home-screen {
+                position: relative !important;
+                width: 440px !important;
+                height: 100% !important;
+                transform: none !important;
+                border-right: 1px solid #222;
+                flex-shrink: 0;
+                z-index: 10;
             }
-            .app-wrapper::before { left: 0; }
-            .app-wrapper::after { right: 0; }
+            
+            /* Десктопный режим: правая колонка (сам чат) */
+            .chat-screen {
+                position: relative !important;
+                flex: 1 !important;
+                width: auto !important;
+                height: 100% !important;
+                transform: none !important;
+                z-index: 10;
+            }
+            
+            /* На ПК кнопка назад в шапке чата не нужна вовсе */
+            .back-home-btn {
+                display: none !important;
+            }
         }
+
         @media (max-width: 800px) {
             .app-wrapper::before, .app-wrapper::after { display: none; }
             .app { border-left: none; border-right: none; box-shadow: none; }
@@ -999,19 +1017,21 @@
             margin: 0 !important;
         }
 
-        .chat-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* Заглушка для пустого чата на десктопе и мобилках */
+        .empty-chat-placeholder {
+            flex: 1;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             flex-direction: column;
+            gap: 15px;
             background: #000000;
-            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            transform: translateX(100%);
-            z-index: 20;
         }
+        .empty-chat-placeholder span:first-child { font-size: 2.5rem; opacity: 0.2; }
 
         /* Modal Call Overlay Style */
         .call-modal-overlay {
@@ -1096,7 +1116,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             flex-shrink: 0;
             padding: 0;
         }
@@ -1118,21 +1138,18 @@
             background: #2a2a2a;
         }
         .call-ctrl-btn.end-call {
-            background: #d9534f;
-            border-color: #d9534f;
+            background: #1f1f1f;
+            border-color: #3a3a3a;
         }
         .call-ctrl-btn.end-call:hover {
-            background: #c9302c;
+            background: #2a2a2a;
         }
         .call-ctrl-btn.accept-call {
-            background: #2ecc2e;
-            border-color: #2ecc2e;
+            background: #1f1f1f;
+            border-color: #3a3a3a;
         }
         .call-ctrl-btn.accept-call:hover {
-            background: #27ae60;
-        }
-        .call-ctrl-btn.accept-call img {
-            filter: brightness(0) invert(1);
+            background: #2a2a2a;
         }
         .call-ctrl-btn.active-state {
             background: #fff;
@@ -1181,40 +1198,47 @@
             <div class="home-scrollable">
                 <div id="chatsListContainer" style="margin: 10px 20px; display: flex; flex-direction: column; gap: 8px;"></div>
                 <div id="notConnectedPlaceholder" class="not-connect-placeholder"> 
-                    <span>NO ACTIVE CHATS</span>
+                    <span>NO CHATS</span>
                 </div>
-                <div class="rules-bottom-btn" style="margin: 10px 20px;" onclick="showRulesFromHome()">RULES & DISCLAIMER</div>
             </div>
+            <div class="rules-bottom-btn" style="margin: 10px 20px;" onclick="showRulesFromHome()">RULES & DISCLAIMER</div>
         </div>
 
         <div class="chat-screen" id="chatScreen">
-            <div class="chat-header">
-                <button class="back-home-btn" id="backHomeBtn">
-                    <img src="image/back.png" alt="←" draggable="false">
-                </button>
-                <div class="chat-peer-info-center">
-                    <div class="peer-info-button" id="peerInfoBtn">
-                        <div class="peer-info-avatar" style="position:relative;">
-                            <img id="peerAvatarImg" src="image/ava1.png" draggable="false">
-                            <span class="status-dot" id="peerStatusDot"></span>
+            <!-- Динамический контейнер чата (если не выбран чат на ПК/телефоне) -->
+            <div id="activeChatWrapper" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+                <div class="chat-header">
+                    <button class="back-home-btn" id="backHomeBtn">
+                        <img src="image/back.png" alt="←" draggable="false">
+                    </button>
+                    <div class="chat-peer-info-center">
+                        <div class="peer-info-button" id="peerInfoBtn">
+                            <div class="peer-info-avatar" style="position:relative;">
+                                <img id="peerAvatarImg" src="image/ava1.png" draggable="false">
+                                <span class="status-dot" id="peerStatusDot"></span>
+                            </div>
+                            <div class="peer-info-nick" id="peerNickChat">friend</div>
                         </div>
-                        <div class="peer-info-nick" id="peerNickChat">friend</div>
                     </div>
+                    <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
+                        <img src="image/phone.png" alt="Call" draggable="false">
+                    </button>
                 </div>
-                <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
-                    <img src="image/phone.png" alt="Call" draggable="false">
+                <div id="chatMessages"></div>
+                <div class="input-area">
+                    <button class="btn-icon" onclick="document.getElementById('fileInput').click()"><img src="image/plus.png" alt="+" class="btn-img" draggable="false"></button>
+                    <button class="btn-icon" id="recordBtn" onclick="toggleRecord()"><img src="image/mic.png" alt="V" class="btn-img" id="mic-icon" draggable="false"></button>
+                    <input type="text" id="msgInput" placeholder="Message..." onkeypress="if(event.key==='Enter') sendText()" autocomplete="off">
+                    <button class="btn-icon send-btn" onclick="sendText()"><img src="image/send.png" alt=">" class="btn-img" draggable="false"></button>
+                </div>
+                <button id="scrollDownBtn" class="scroll-down-btn">
+                    <img src="image/down.png" alt="↓" draggable="false">
                 </button>
             </div>
-            <div id="chatMessages"></div>
-            <div class="input-area">
-                <button class="btn-icon" onclick="document.getElementById('fileInput').click()"><img src="image/plus.png" alt="+" class="btn-img" draggable="false"></button>
-                <button class="btn-icon" id="recordBtn" onclick="toggleRecord()"><img src="image/mic.png" alt="V" class="btn-img" id="mic-icon" draggable="false"></button>
-                <input type="text" id="msgInput" placeholder="Message..." onkeypress="if(event.key==='Enter') sendText()" autocomplete="off">
-                <button class="btn-icon send-btn" onclick="sendText()"><img src="image/send.png" alt=">" class="btn-img" draggable="false"></button>
+            <!-- Заглушка, если чат не открыт -->
+            <div id="noActiveChatPlaceholder" class="empty-chat-placeholder" style="display: none;">
+                <span>NO ACTIVE CHAT</span>
             </div>
-            <button id="scrollDownBtn" class="scroll-down-btn">
-                <img src="image/down.png" alt="↓" draggable="false">
-            </button>
         </div>
 
     </div>
@@ -1346,11 +1370,14 @@
     const connectSection = document.getElementById('connectSection');
     const notConnectedPlaceholder = document.getElementById('notConnectedPlaceholder');
     const scrollDownBtn = document.getElementById('scrollDownBtn');
+    
+    // Проверка устройства при запуске
+    const isDesktop = window.innerWidth > 800;
+
     let lastDateLabel = "";
     let isUserScrolling = false;
     let scrollTimeout = null;
 
-    // Вспомогательные функции для управления звуками вызова
     function playDialingSound() {
         const sound = document.getElementById('dialingSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
@@ -1678,10 +1705,34 @@
         if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
     
+    function checkActiveChatState() {
+        const wrapper = document.getElementById('activeChatWrapper');
+        const placeholder = document.getElementById('noActiveChatPlaceholder');
+        if (!wrapper || !placeholder) return;
+
+        if (isDesktop) {
+            // На ПК чат всегда отображается справа: либо активный контент, либо "NO ACTIVE CHAT"
+            if (currentChatPeer) {
+                wrapper.style.display = 'flex';
+                placeholder.style.display = 'none';
+            } else {
+                wrapper.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
+        } else {
+            // На мобильных/планшетах используется старое поведение с экранами
+            placeholder.style.display = 'none';
+            wrapper.style.display = 'flex';
+        }
+    }
+
     function switchToChatMode() {
         isChatOpen = true;
-        homeScreen.classList.add('chat-open');
-        chatScreen.classList.add('chat-visible');
+        if (!isDesktop) {
+            homeScreen.classList.add('chat-open');
+            chatScreen.classList.add('chat-visible');
+        }
+        checkActiveChatState();
         setTimeout(() => {
             document.getElementById('msgInput').focus();
             if (chatMessagesDiv) {
@@ -1693,8 +1744,14 @@
     
     function switchToHomeMode() {
         isChatOpen = false;
-        homeScreen.classList.remove('chat-open');
-        chatScreen.classList.remove('chat-visible');
+        if (!isDesktop) {
+            homeScreen.classList.remove('chat-open');
+            chatScreen.classList.remove('chat-visible');
+        } else {
+            currentChatPeer = null;
+            currentConn = null;
+        }
+        checkActiveChatState();
         updateChatsListUI();
     }
     
@@ -1726,14 +1783,6 @@
         
         connection.on('open', () => {
             connection.send({ type: 'profile', nick: myNick, avatar: myAvatar, status: myStatus });
-            
-            if (chat.history && chat.history.length > 0) {
-                chat.history.forEach(item => {
-                    if (item.side === 'my') {
-                        connection.send({ type: item.type, data: item.data, msgId: item.msgId });
-                    }
-                });
-            }
 
             if (currentChatPeer === peerId) {
                 currentConn = connection;
@@ -1785,7 +1834,6 @@
             } else if (payload.type === 'peer_closed_chat') {
                 removeChat(peerId);
             } else if (payload.type === 'call_rejected') {
-                // Если тот, кому звонили, сбросил вызов — закрываем модалку у инициатора
                 if (currentCall) {
                     currentCall.close();
                     currentCall = null;
@@ -2001,7 +2049,7 @@
         try {
             localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             setupCallUI(chat, "Calling...");
-            playDialingSound(); // Включаем звук гудков у инициатора
+            playDialingSound();
             
             const call = peer.call(currentChatPeer, localAudioStream);
             handleCallEvents(call);
@@ -2036,24 +2084,20 @@
         const incomingOverlay = document.getElementById('incomingCallModalOverlay');
         incomingOverlay.classList.add('active');
         
-        playRingingSound(); // Включаем рингтон у принимающего
+        playRingingSound();
 
         const rejectBtn = document.getElementById('rejectCallBtn');
         const acceptBtn = document.getElementById('acceptCallBtn');
 
-        // Кнопка отклонения (слева) с уведомлением инициатора
         rejectBtn.onclick = () => {
             stopRingingSound();
             incomingOverlay.classList.remove('active');
-            
-            // Пытаемся отправить сигнал сброса через активное соединение чата, если оно открыто
             if (chat.conn && chat.conn.open) {
                 chat.conn.send({ type: 'call_rejected' });
             }
             incomingCall.close();
         };
 
-        // Кнопка принятия звонка (справа)
         acceptBtn.onclick = () => {
             stopRingingSound();
             incomingOverlay.classList.remove('active');
@@ -2076,7 +2120,7 @@
         document.getElementById('muteMicImg').src = "image/mic.png";
 
         call.on('stream', (remoteStream) => {
-            stopDialingSound(); // Выключаем гудки при соединении
+            stopDialingSound();
             stopRingingSound();
             document.getElementById('callStatusText').innerText = "Connected";
             const remoteAudio = document.getElementById('remoteAudio');
@@ -2313,6 +2357,7 @@
                 }
             }
             updateChatsListUI();
+            checkActiveChatState();
         });
         
         peer.on('error', (err) => {
@@ -2473,7 +2518,7 @@
     window.addEventListener('dragover', (e) => { e.preventDefault(); });
     window.addEventListener('dragenter', (e) => {
         e.preventDefault();
-        if (chatScreen.classList.contains('chat-visible') && currentConn && currentConn.open) {
+        if ((isDesktop || chatScreen.classList.contains('chat-visible')) && currentConn && currentConn.open) {
             dropOverlay.classList.add('active');
         }
     });
@@ -2486,13 +2531,13 @@
     window.addEventListener('drop', (e) => {
         e.preventDefault();
         dropOverlay.classList.remove('active');
-        if (!chatScreen.classList.contains('chat-visible') || !currentConn || !currentConn.open) return;
+        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
         const files = e.dataTransfer.files;
         if (files.length > 0 && files[0].type.indexOf('image') !== -1) sendFile(files[0]);
     });
     
     document.addEventListener('paste', (e) => {
-        if (!chatScreen.classList.contains('chat-visible') || !currentConn || !currentConn.open) return;
+        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let item of items) {
             if (item.type.indexOf('image') !== -1) {
@@ -2504,6 +2549,8 @@
         }
     });
     
+    checkActiveChatState();
+
     if(!myNick || !isValidNick(myNick)) {
         showRegistrationModal();
     } else {
