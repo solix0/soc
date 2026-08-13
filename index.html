@@ -1397,7 +1397,6 @@
     const notConnectedPlaceholder = document.getElementById('notConnectedPlaceholder');
     const scrollDownBtn = document.getElementById('scrollDownBtn');
     
-    // Проверка устройства при запуске
     const isDesktop = window.innerWidth > 800;
 
     let lastDateLabel = "";
@@ -1469,6 +1468,7 @@
                 displayName: chat.displayName,
                 unreadCount: chat.unreadCount,
                 lastMessage: chat.lastMessage,
+                lastTime: chat.lastTime || 0,
                 history: chat.history || []
             };
         }
@@ -1490,6 +1490,7 @@
                             displayName: data.displayName || data.nick,
                             unreadCount: data.unreadCount || 0,
                             lastMessage: data.lastMessage || '---',
+                            lastTime: data.lastTime || 0,
                             history: data.history || []
                         });
                     }
@@ -1503,8 +1504,13 @@
         if (!container) return;
         container.innerHTML = '';
         
+        // Сортируем чаты по времени последнего сообщения / создания (новейшие сверху, как в Telegram)
+        let sortedChats = Array.from(activeChats.entries()).sort((a, b) => {
+            return (b[1].lastTime || 0) - (a[1].lastTime || 0);
+        });
+        
         let hasChats = false;
-        for (const [peerId, chat] of activeChats.entries()) {
+        for (const [peerId, chat] of sortedChats) {
             hasChats = true;
             const chatRow = document.createElement('div');
             chatRow.className = 'active-chat-row';
@@ -1568,155 +1574,144 @@
         }, 100);
     }
     
-// Функция для превращения текста ссылок в кликабельные HTML-ссылки
-function linkify(inputText) {
-    if (!inputText) return '';
-    // Экранируем HTML, чтобы избежать XSS
-    let escaped = escapeHtml(inputText);
-    
-    // Регулярное выражение для поиска URL
-    let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-    let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
-    
-    // Также обрабатываем домены без http:// типа google.com
-    let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-    let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
-    
-    return finalResult;
-}
+    function linkify(inputText) {
+        if (!inputText) return '';
+        let escaped = escapeHtml(inputText);
+        let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+        let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
+        let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+        let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
+        return finalResult;
+    }
 
-function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
-    const container = chatMessagesDiv;
-    if (!container) return;
-    
-    const now = savedTime ? new Date(savedTime) : new Date();
-    const dateOptions = { day: 'numeric', month: 'long' };
-    const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
-    if (currentDateLabel !== lastDateLabel) {
-        const dateDiv = document.createElement('div'); 
-        dateDiv.className = 'date-divider'; 
-        dateDiv.innerText = currentDateLabel;
-        container.appendChild(dateDiv);
-        lastDateLabel = currentDateLabel;
-    }
-    
-    const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
-    const msgDiv = document.createElement('div'); 
-    msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
-    msgDiv.setAttribute('data-msg-id', msgId);
-    
-    const content = document.createElement('div');
-    if (type === 'text') {
-        // Используем linkify вместо обычного escapeHtml/innerText, чтобы ссылки стали кликабельными
-        content.innerHTML = linkify(data);
-    }
-    else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
-    else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
-    msgDiv.appendChild(content);
-    
-    const timeDiv = document.createElement('div'); 
-    timeDiv.className = 'msg-time';
-    timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    msgDiv.appendChild(timeDiv);
-    
-    container.appendChild(msgDiv);
-    
-    const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
-    
-    if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
-    
-    const isMyMessage = (side === 'my');
-    msgDiv.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showReactionPicker(msgDiv, msgId, isMyMessage);
-        return false;
-    });
-    let lastTap = 0;
-    msgDiv.addEventListener('touchstart', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 300 && tapLength > 0) {
+    function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
+        const container = chatMessagesDiv;
+        if (!container) return;
+        
+        const now = savedTime ? new Date(savedTime) : new Date();
+        const dateOptions = { day: 'numeric', month: 'long' };
+        const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
+        if (currentDateLabel !== lastDateLabel) {
+            const dateDiv = document.createElement('div'); 
+            dateDiv.className = 'date-divider'; 
+            dateDiv.innerText = currentDateLabel;
+            container.appendChild(dateDiv);
+            lastDateLabel = currentDateLabel;
+        }
+        
+        const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
+        const msgDiv = document.createElement('div'); 
+        msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
+        msgDiv.setAttribute('data-msg-id', msgId);
+        
+        const content = document.createElement('div');
+        if (type === 'text') {
+            content.innerHTML = linkify(data);
+        }
+        else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
+        else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
+        msgDiv.appendChild(content);
+        
+        const timeDiv = document.createElement('div'); 
+        timeDiv.className = 'msg-time';
+        timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        msgDiv.appendChild(timeDiv);
+        
+        container.appendChild(msgDiv);
+        
+        const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
+        
+        if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
+        
+        const isMyMessage = (side === 'my');
+        msgDiv.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             showReactionPicker(msgDiv, msgId, isMyMessage);
+            return false;
+        });
+        let lastTap = 0;
+        msgDiv.addEventListener('touchstart', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                showReactionPicker(msgDiv, msgId, isMyMessage);
+            }
+            lastTap = currentTime;
+        });
+        
+        if (side === 'other' && !savedTime) { 
+            const sound = document.getElementById('msgSound'); 
+            if(sound) sound.play().catch(e=>{}); 
         }
-        lastTap = currentTime;
-    });
-    
-    if (side === 'other' && !savedTime) { 
-        const sound = document.getElementById('msgSound'); 
-        if(sound) sound.play().catch(e=>{}); 
+        
+        setTimeout(() => checkScrollPosition(), 50);
     }
     
-    setTimeout(() => checkScrollPosition(), 50);
-}
-    
-function showReactionPicker(msgElement, msgId, isMyMessage) {
-    if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
-    const picker = document.createElement('div');
-    picker.className = 'reaction-picker';
-    
-    // Указываем пути к вашим картинкам вместо эмодзи
-    const reactions = [
-        'image/emo1.png', 
-        'image/emo2.png', 
-        'image/emo3.png', 
-        'image/emo4.png', 
-        'image/emo5.png', 
-        'image/emo6.png'
-    ];
-    
-    reactions.forEach(imgPath => {
-        const span = document.createElement('span');
-        span.className = 'reaction-emoji';
+    function showReactionPicker(msgElement, msgId, isMyMessage) {
+        if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
+        const picker = document.createElement('div');
+        picker.className = 'reaction-picker';
         
-        // Внутрь пикера кладем картинку
-        const img = document.createElement('img');
-        img.src = imgPath;
-        img.draggable = false;
-        span.appendChild(img);
+        const reactions = [
+            'image/emo1.png', 
+            'image/emo2.png', 
+            'image/emo3.png', 
+            'image/emo4.png', 
+            'image/emo5.png', 
+            'image/emo6.png'
+        ];
         
-        span.onclick = (e) => {
-            e.stopPropagation();
-            sendReactionToggle(msgId, imgPath); // Передаем путь к картинке как ID реакции
-            picker.remove();
-            activeReactionPicker = null;
+        reactions.forEach(imgPath => {
+            const span = document.createElement('span');
+            span.className = 'reaction-emoji';
+            const img = document.createElement('img');
+            img.src = imgPath;
+            img.draggable = false;
+            span.appendChild(img);
+            
+            span.onclick = (e) => {
+                e.stopPropagation();
+                sendReactionToggle(msgId, imgPath);
+                picker.remove();
+                activeReactionPicker = null;
+            };
+            picker.appendChild(span);
+        });
+        
+        const rect = msgElement.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        let top = rect.top - 50;
+        if (top < 10) top = rect.bottom + 10;
+        if (top + 60 > viewportHeight) top = viewportHeight - 70;
+        if (top < 0) top = 5;
+        
+        let left;
+        if (isMyMessage) {
+            left = rect.left - 230 - 8;
+            if (left < 5) left = rect.right + 2;
+        } else {
+            left = rect.right - 28;
+            if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
+        }
+        if (left < 5) left = 5;
+        if (left + 230 > viewportWidth) left = viewportWidth - 235;
+        
+        picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
+        document.body.appendChild(picker);
+        activeReactionPicker = picker;
+        
+        const closePicker = (e) => {
+            if (picker && !picker.contains(e.target)) {
+                picker.remove();
+                activeReactionPicker = null;
+                document.removeEventListener('click', closePicker);
+            }
         };
-        picker.appendChild(span);
-    });
-    
-    const rect = msgElement.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    let top = rect.top - 50;
-    if (top < 10) top = rect.bottom + 10;
-    if (top + 60 > viewportHeight) top = viewportHeight - 70;
-    if (top < 0) top = 5;
-    
-    let left;
-    if (isMyMessage) {
-        left = rect.left - 230 - 8; // Немного увеличили ширину под картинки
-        if (left < 5) left = rect.right + 2;
-    } else {
-        left = rect.right - 28;
-        if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
+        setTimeout(() => document.addEventListener('click', closePicker), 10);
     }
-    if (left < 5) left = 5;
-    if (left + 230 > viewportWidth) left = viewportWidth - 235;
-    
-    picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
-    document.body.appendChild(picker);
-    activeReactionPicker = picker;
-    
-    const closePicker = (e) => {
-        if (picker && !picker.contains(e.target)) {
-            picker.remove();
-            activeReactionPicker = null;
-            document.removeEventListener('click', closePicker);
-        }
-    };
-    setTimeout(() => document.addEventListener('click', closePicker), 10);
-}
     
     function sendReactionToggle(msgId, emoji) {
         if (!currentConn || !currentConn.open) return;
@@ -1734,51 +1729,47 @@ function showReactionPicker(msgElement, msgId, isMyMessage) {
         updateReactionsUI(msgId);
     }
     
-function updateReactionsUI(msgId) {
-    const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
-    if (!targetMsg) return;
-    let reactionsContainer = targetMsg.querySelector('.reactions-container');
-    if (reactionsContainer) reactionsContainer.remove();
-    
-    const store = reactionsStore.get(msgId);
-    if (!store) return;
-    
-    reactionsContainer = document.createElement('div');
-    reactionsContainer.className = 'reactions-container';
-    
-    const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
+    function updateReactionsUI(msgId) {
+        const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+        if (!targetMsg) return;
+        let reactionsContainer = targetMsg.querySelector('.reactions-container');
+        if (reactionsContainer) reactionsContainer.remove();
+        
+        const store = reactionsStore.get(msgId);
+        if (!store) return;
+        
+        reactionsContainer = document.createElement('div');
+        reactionsContainer.className = 'reactions-container';
+        
+        const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
 
-    if (store.my && store.peer && store.my === store.peer) {
-        const badge = document.createElement('div');
-        badge.className = 'reaction-badge my-reaction';
-        badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
-        badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
-        reactionsContainer.appendChild(badge);
-    } else {
-        if (store.my) {
+        if (store.my && store.peer && store.my === store.peer) {
             const badge = document.createElement('div');
             badge.className = 'reaction-badge my-reaction';
-            badge.innerHTML = createImgHTML(store.my);
+            badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
             badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
             reactionsContainer.appendChild(badge);
+        } else {
+            if (store.my) {
+                const badge = document.createElement('div');
+                badge.className = 'reaction-badge my-reaction';
+                badge.innerHTML = createImgHTML(store.my);
+                badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
+                reactionsContainer.appendChild(badge);
+            }
+            if (store.peer) {
+                const badge = document.createElement('div');
+                badge.className = 'reaction-badge';
+                badge.innerHTML = createImgHTML(store.peer);
+                badge.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    sendReactionToggle(msgId, store.peer); 
+                };
+                reactionsContainer.appendChild(badge);
+            }
         }
-        if (store.peer) {
-            const badge = document.createElement('div');
-            badge.className = 'reaction-badge'; // Можно добавить класс, если нужно визуально отличать
-            badge.innerHTML = createImgHTML(store.peer);
-            
-            // ИСПРАВЛЕНИЕ ЗДЕСЬ: делаем кликабельной реакцию собеседника, 
-            // чтобы при нажатии на нее отправлялась точно такая же ваша реакция
-            badge.onclick = (e) => { 
-                e.stopPropagation(); 
-                sendReactionToggle(msgId, store.peer); 
-            };
-            
-            reactionsContainer.appendChild(badge);
-        }
+        if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
-    if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
-}
     
     function checkActiveChatState() {
         const wrapper = document.getElementById('activeChatWrapper');
@@ -1786,7 +1777,6 @@ function updateReactionsUI(msgId) {
         if (!wrapper || !placeholder) return;
 
         if (isDesktop) {
-            // На ПК чат всегда отображается справа: либо активный контент, либо "NO ACTIVE CHAT"
             if (currentChatPeer) {
                 wrapper.style.display = 'flex';
                 placeholder.style.display = 'none';
@@ -1795,7 +1785,6 @@ function updateReactionsUI(msgId) {
                 placeholder.style.display = 'flex';
             }
         } else {
-            // На мобильных/планшетах используется старое поведение с экранами
             placeholder.style.display = 'none';
             wrapper.style.display = 'flex';
         }
@@ -1888,21 +1877,24 @@ function updateReactionsUI(msgId) {
                 chatData.lastMessage = payload.type === 'text' ? 
                     (payload.data.length > 30 ? payload.data.substring(0,27)+'...' : payload.data) : 
                     (payload.type === 'image' ? '✿ Photo' : '♪ Voice');
+                
+                // ОБНОВЛЯЕМ ВРЕМЯ АКТИВНОСТИ ПРИ ПОЛУЧЕНИИ СООБЩЕНИЯ (ЧАТ ПОДНИМАЕТСЯ НАВЕРХ)
+                chatData.lastTime = Date.now();
+
                 if (currentChatPeer !== peerId) chatData.unreadCount = (chatData.unreadCount || 0) + 1;
                 if (!chatData.history) chatData.history = [];
                 
                 const exists = chatData.history.some(m => m.msgId === payload.msgId);
                 if (!exists) {
-                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: Date.now(), msgId: payload.msgId });
+                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: chatData.lastTime, msgId: payload.msgId });
                     if (chatData.history.length > 50) chatData.history.shift();
                     saveAllChats();
                     if (currentChatPeer === peerId) {
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
                         const sound = document.getElementById('msgSound');
                         if(sound) sound.play().catch(e=>{});
-                    } else {
-                        updateChatsListUI();
                     }
+                    updateChatsListUI(); // Перерисовываем список, чтобы чат поднялся наверх
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
@@ -2012,6 +2004,8 @@ function updateReactionsUI(msgId) {
         
         updateStatus('CONNECTING...', '#b0b0b0');
         const newConn = peer.connect(friendNick);
+        
+        // НОВЫЙ ЧАТ ПОЛУЧАЕТ ТЕКУЩЕЕ ВРЕМЯ. ЕСЛИ СООБЩЕНИЙ ЕЩЕ НЕ БЫЛО, ОН БУДЕТ САМЫМ НОВЫМ (ИЛИ ВСТАНИТ ПО ВРЕМЕНИ СОЗДАНИЯ).
         activeChats.set(friendNick, {
             conn: newConn,
             nick: friendNick,
@@ -2020,6 +2014,7 @@ function updateReactionsUI(msgId) {
             displayName: friendNick,
             unreadCount: 0,
             lastMessage: '---',
+            lastTime: Date.now(), // Фиксируем время создания
             history: []
         });
         saveAllChats();
@@ -2042,11 +2037,15 @@ function updateReactionsUI(msgId) {
         const chat = activeChats.get(currentChatPeer);
         if (chat) {
             chat.lastMessage = text.length > 30 ? text.substring(0,27)+'...' : text;
+            
+            // ОБНОВЛЯЕМ ВРЕМЯ ПРИ ОТПРАВКЕ СООБЩЕНИЯ (ЧАТ ПОДНИМАЕТСЯ НАВЕРХ)
+            chat.lastTime = Date.now();
+
             if (!chat.history) chat.history = [];
-            chat.history.push({ data: text, side: 'my', type: 'text', time: Date.now(), msgId: msgId });
+            chat.history.push({ data: text, side: 'my', type: 'text', time: chat.lastTime, msgId: msgId });
             if (chat.history.length > 50) chat.history.shift();
             saveAllChats();
-            updateChatsListUI();
+            updateChatsListUI(); // Перерисовываем список, чтобы чат поднялся наверх
         }
         input.value = '';
     }
@@ -2063,8 +2062,9 @@ function updateReactionsUI(msgId) {
             const chat = activeChats.get(currentChatPeer);
             if (chat) {
                 chat.lastMessage = '✿ Photo';
+                chat.lastTime = Date.now(); // Обновляем время при отправке картинки
                 if (!chat.history) chat.history = [];
-                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: Date.now(), msgId: msgId });
+                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: chat.lastTime, msgId: msgId });
                 if (chat.history.length > 50) chat.history.shift();
                 saveAllChats();
                 updateChatsListUI();
@@ -2101,8 +2101,9 @@ function updateReactionsUI(msgId) {
                     const chat = activeChats.get(currentChatPeer);
                     if (chat) {
                         chat.lastMessage = '♪ Voice';
+                        chat.lastTime = Date.now(); // Обновляем время при отправке голоса
                         if (!chat.history) chat.history = [];
-                        chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: Date.now(), msgId: msgId });
+                        chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: chat.lastTime, msgId: msgId });
                         if (chat.history.length > 50) chat.history.shift();
                         saveAllChats();
                         updateChatsListUI();
@@ -2145,6 +2146,7 @@ function updateReactionsUI(msgId) {
                 displayName: callerId,
                 unreadCount: 0,
                 lastMessage: '---',
+                lastTime: Date.now(),
                 history: []
             });
             saveAllChats();
@@ -2460,6 +2462,7 @@ function updateReactionsUI(msgId) {
                 displayName: peerId,
                 unreadCount: 0,
                 lastMessage: '---',
+                lastTime: Date.now(),
                 history: []
             });
             saveAllChats();
@@ -2567,6 +2570,7 @@ function updateReactionsUI(msgId) {
                 displayName: peerId,
                 unreadCount: 0,
                 lastMessage: '---',
+                lastTime: Date.now(),
                 history: []
             });
             saveAllChats();
@@ -2585,62 +2589,22 @@ function updateReactionsUI(msgId) {
     if (scrollDownBtn) scrollDownBtn.addEventListener('click', scrollToBottom);
     if (chatMessagesDiv) chatMessagesDiv.addEventListener('scroll', onChatScroll);
     
-    document.getElementById('peer-nick-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
-    });
-    
-    const dropOverlay = document.getElementById('dropOverlay');
-    window.addEventListener('dragover', (e) => { e.preventDefault(); });
-    window.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        if ((isDesktop || chatScreen.classList.contains('chat-visible')) && currentConn && currentConn.open) {
-            dropOverlay.classList.add('active');
-        }
-    });
-    window.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-            dropOverlay.classList.remove('active');
-        }
-    });
-    window.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropOverlay.classList.remove('active');
-        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
-        const files = e.dataTransfer.files;
-        if (files.length > 0 && files[0].type.indexOf('image') !== -1) sendFile(files[0]);
-    });
-    
-    document.addEventListener('paste', (e) => {
-        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let item of items) {
-            if (item.type.indexOf('image') !== -1) {
-                e.preventDefault();
-                const file = item.getAsFile();
-                if (file) sendFile(file);
-                return;
-            }
-        }
-    });
-    
-    checkActiveChatState();
-
-    if(!myNick || !isValidNick(myNick)) {
+    if (!myNick) {
         showRegistrationModal();
     } else {
         startWithNick(myNick, false);
-        updateHomeUI();
     }
     
-    setTimeout(() => {
-        document.getElementById('preloader').classList.add('hide-preloader');
-        document.getElementById('mainApp').classList.add('app-visible');
-    }, 2000);
-    
-    window.addEventListener('beforeunload', () => {
-        if (currentConn && currentConn.open) currentConn.close();
-        if (peer) peer.destroy();
+    window.addEventListener('load', () => {
+        const preloader = document.getElementById('preloader');
+        const mainApp = document.getElementById('mainApp');
+        setTimeout(() => {
+            if(preloader) {
+                preloader.classList.add('hide-preloader');
+                setTimeout(() => preloader.remove(), 500);
+            }
+            if(mainApp) mainApp.classList.add('app-visible');
+        }, 800);
     });
 </script>
 </body>
