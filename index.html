@@ -1397,129 +1397,12 @@
     const notConnectedPlaceholder = document.getElementById('notConnectedPlaceholder');
     const scrollDownBtn = document.getElementById('scrollDownBtn');
     
+    // Проверка устройства при запуске
     const isDesktop = window.innerWidth > 800;
 
     let lastDateLabel = "";
     let isUserScrolling = false;
     let scrollTimeout = null;
-
-    // --- INDEXEDDB IMPLEMENTATION ---
-    const DB_NAME = 'SOC_Messenger_DB';
-    const DB_VERSION = 1;
-    const STORE_CHATS = 'chats';
-    const STORE_SETTINGS = 'settings';
-
-    function openDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve(request.result);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_CHATS)) {
-                    db.createObjectStore(STORE_CHATS); // ключ — peerId
-                }
-                if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
-                    db.createObjectStore(STORE_SETTINGS); // для настроек и кастомных имен
-                }
-            };
-        });
-    }
-
-    async function saveChatToDB(peerId, chatData) {
-        try {
-            const db = await openDB();
-            const tx = db.transaction(STORE_CHATS, 'readwrite');
-            const store = tx.objectStore(STORE_CHATS);
-            store.put({
-                nick: chatData.nick,
-                avatar: chatData.avatar,
-                status: chatData.status,
-                displayName: chatData.displayName,
-                unreadCount: chatData.unreadCount,
-                lastMessage: chatData.lastMessage,
-                lastTime: chatData.lastTime || 0,
-                history: chatData.history || []
-            }, peerId);
-            return tx.complete;
-        } catch (e) {
-            console.error("Error saving chat to IndexedDB:", e);
-        }
-    }
-
-    async function removeChatFromDB(peerId) {
-        try {
-            const db = await openDB();
-            const tx = db.transaction(STORE_CHATS, 'readwrite');
-            tx.objectStore(STORE_CHATS).delete(peerId);
-            return tx.complete;
-        } catch (e) {
-            console.error("Error removing chat from IndexedDB:", e);
-        }
-    }
-
-    async function loadSavedChats() {
-        try {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_CHATS, 'readonly');
-                const store = tx.objectStore(STORE_CHATS);
-                const request = store.openCursor();
-
-                request.onsuccess = (event) => {
-                    const cursor = event.target.result;
-                    if (cursor) {
-                        const peerId = cursor.key;
-                        const data = cursor.value;
-                        activeChats.set(peerId, {
-                            conn: null,
-                            nick: data.nick,
-                            avatar: data.avatar || 'image/ava1.png',
-                            status: data.status || 'offline',
-                            displayName: data.displayName || data.nick,
-                            unreadCount: data.unreadCount || 0,
-                            lastMessage: data.lastMessage || '---',
-                            lastTime: data.lastTime || 0,
-                            history: data.history || []
-                        });
-                        cursor.continue();
-                    } else {
-                        updateChatsListUI();
-                        resolve();
-                    }
-                };
-                request.onerror = () => reject(request.error);
-            });
-        } catch (e) {
-            console.error("Error loading chats from IndexedDB:", e);
-        }
-    }
-
-    async function saveSettingToDB(key, value) {
-        try {
-            const db = await openDB();
-            const tx = db.transaction(STORE_SETTINGS, 'readwrite');
-            tx.objectStore(STORE_SETTINGS).put(value, key);
-            return tx.complete;
-        } catch (e) {
-            console.error("Error saving setting:", e);
-        }
-    }
-
-    async function getSettingFromDB(key) {
-        try {
-            const db = await openDB();
-            return new Promise((resolve) => {
-                const tx = db.transaction(STORE_SETTINGS, 'readonly');
-                const req = tx.objectStore(STORE_SETTINGS).get(key);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(undefined);
-            });
-        } catch (e) {
-            return undefined;
-        }
-    }
-    // --- END INDEXEDDB IMPLEMENTATION ---
 
     function playDialingSound() {
         const sound = document.getElementById('dialingSound');
@@ -1576,17 +1459,52 @@
         return /^[a-zA-Z0-9_]{3,20}$/.test(nick);
     }
     
+    function saveAllChats() {
+        const toSave = {};
+        for (const [peerId, chat] of activeChats.entries()) {
+            toSave[peerId] = {
+                nick: chat.nick,
+                avatar: chat.avatar,
+                status: chat.status,
+                displayName: chat.displayName,
+                unreadCount: chat.unreadCount,
+                lastMessage: chat.lastMessage,
+                history: chat.history || []
+            };
+        }
+        localStorage.setItem('soc-active-chats', JSON.stringify(toSave));
+    }
+    
+    function loadSavedChats() {
+        const saved = localStorage.getItem('soc-active-chats');
+        if (saved) {
+            try {
+                const chats = JSON.parse(saved);
+                for (const [peerId, data] of Object.entries(chats)) {
+                    if (data.nick) {
+                        activeChats.set(peerId, {
+                            conn: null,
+                            nick: data.nick,
+                            avatar: data.avatar || 'image/ava1.png',
+                            status: data.status || 'offline',
+                            displayName: data.displayName || data.nick,
+                            unreadCount: data.unreadCount || 0,
+                            lastMessage: data.lastMessage || '---',
+                            history: data.history || []
+                        });
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+    }
+    
     function updateChatsListUI() {
         let container = document.getElementById('chatsListContainer');
         if (!container) return;
         container.innerHTML = '';
         
-        let sortedChats = Array.from(activeChats.entries()).sort((a, b) => {
-            return (b[1].lastTime || 0) - (a[1].lastTime || 0);
-        });
-        
         let hasChats = false;
-        for (const [peerId, chat] of sortedChats) {
+        for (const [peerId, chat] of activeChats.entries()) {
             hasChats = true;
             const chatRow = document.createElement('div');
             chatRow.className = 'active-chat-row';
@@ -1650,144 +1568,155 @@
         }, 100);
     }
     
-    function linkify(inputText) {
-        if (!inputText) return '';
-        let escaped = escapeHtml(inputText);
-        let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-        let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
-        let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-        let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
-        return finalResult;
-    }
+// Функция для превращения текста ссылок в кликабельные HTML-ссылки
+function linkify(inputText) {
+    if (!inputText) return '';
+    // Экранируем HTML, чтобы избежать XSS
+    let escaped = escapeHtml(inputText);
+    
+    // Регулярное выражение для поиска URL
+    let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
+    
+    // Также обрабатываем домены без http:// типа google.com
+    let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+    let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
+    
+    return finalResult;
+}
 
-    function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
-        const container = chatMessagesDiv;
-        if (!container) return;
-        
-        const now = savedTime ? new Date(savedTime) : new Date();
-        const dateOptions = { day: 'numeric', month: 'long' };
-        const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
-        if (currentDateLabel !== lastDateLabel) {
-            const dateDiv = document.createElement('div'); 
-            dateDiv.className = 'date-divider'; 
-            dateDiv.innerText = currentDateLabel;
-            container.appendChild(dateDiv);
-            lastDateLabel = currentDateLabel;
-        }
-        
-        const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
-        const msgDiv = document.createElement('div'); 
-        msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
-        msgDiv.setAttribute('data-msg-id', msgId);
-        
-        const content = document.createElement('div');
-        if (type === 'text') {
-            content.innerHTML = linkify(data);
-        }
-        else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
-        else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
-        msgDiv.appendChild(content);
-        
-        const timeDiv = document.createElement('div'); 
-        timeDiv.className = 'msg-time';
-        timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-        msgDiv.appendChild(timeDiv);
-        
-        container.appendChild(msgDiv);
-        
-        const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-        if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
-        
-        if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
-        
-        const isMyMessage = (side === 'my');
-        msgDiv.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            showReactionPicker(msgDiv, msgId, isMyMessage);
-            return false;
-        });
-        let lastTap = 0;
-        msgDiv.addEventListener('touchstart', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 300 && tapLength > 0) {
-                e.preventDefault();
-                showReactionPicker(msgDiv, msgId, isMyMessage);
-            }
-            lastTap = currentTime;
-        });
-        
-        if (side === 'other' && !savedTime) { 
-            const sound = document.getElementById('msgSound'); 
-            if(sound) sound.play().catch(e=>{}); 
-        }
-        
-        setTimeout(() => checkScrollPosition(), 50);
+function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
+    const container = chatMessagesDiv;
+    if (!container) return;
+    
+    const now = savedTime ? new Date(savedTime) : new Date();
+    const dateOptions = { day: 'numeric', month: 'long' };
+    const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
+    if (currentDateLabel !== lastDateLabel) {
+        const dateDiv = document.createElement('div'); 
+        dateDiv.className = 'date-divider'; 
+        dateDiv.innerText = currentDateLabel;
+        container.appendChild(dateDiv);
+        lastDateLabel = currentDateLabel;
     }
     
-    function showReactionPicker(msgElement, msgId, isMyMessage) {
-        if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
-        const picker = document.createElement('div');
-        picker.className = 'reaction-picker';
-        
-        const reactions = [
-            'image/emo1.png', 
-            'image/emo2.png', 
-            'image/emo3.png', 
-            'image/emo4.png', 
-            'image/emo5.png', 
-            'image/emo6.png'
-        ];
-        
-        reactions.forEach(imgPath => {
-            const span = document.createElement('span');
-            span.className = 'reaction-emoji';
-            const img = document.createElement('img');
-            img.src = imgPath;
-            img.draggable = false;
-            span.appendChild(img);
-            
-            span.onclick = (e) => {
-                e.stopPropagation();
-                sendReactionToggle(msgId, imgPath);
-                picker.remove();
-                activeReactionPicker = null;
-            };
-            picker.appendChild(span);
-        });
-        
-        const rect = msgElement.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        let top = rect.top - 50;
-        if (top < 10) top = rect.bottom + 10;
-        if (top + 60 > viewportHeight) top = viewportHeight - 70;
-        if (top < 0) top = 5;
-        
-        let left;
-        if (isMyMessage) {
-            left = rect.left - 230 - 8;
-            if (left < 5) left = rect.right + 2;
-        } else {
-            left = rect.right - 28;
-            if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
-        }
-        if (left < 5) left = 5;
-        if (left + 230 > viewportWidth) left = viewportWidth - 235;
-        
-        picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
-        document.body.appendChild(picker);
-        activeReactionPicker = picker;
-        
-        const closePicker = (e) => {
-            if (picker && !picker.contains(e.target)) {
-                picker.remove();
-                activeReactionPicker = null;
-                document.removeEventListener('click', closePicker);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closePicker), 10);
+    const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
+    const msgDiv = document.createElement('div'); 
+    msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
+    msgDiv.setAttribute('data-msg-id', msgId);
+    
+    const content = document.createElement('div');
+    if (type === 'text') {
+        // Используем linkify вместо обычного escapeHtml/innerText, чтобы ссылки стали кликабельными
+        content.innerHTML = linkify(data);
     }
+    else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
+    else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
+    msgDiv.appendChild(content);
+    
+    const timeDiv = document.createElement('div'); 
+    timeDiv.className = 'msg-time';
+    timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    msgDiv.appendChild(timeDiv);
+    
+    container.appendChild(msgDiv);
+    
+    const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
+    
+    if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
+    
+    const isMyMessage = (side === 'my');
+    msgDiv.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showReactionPicker(msgDiv, msgId, isMyMessage);
+        return false;
+    });
+    let lastTap = 0;
+    msgDiv.addEventListener('touchstart', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            e.preventDefault();
+            showReactionPicker(msgDiv, msgId, isMyMessage);
+        }
+        lastTap = currentTime;
+    });
+    
+    if (side === 'other' && !savedTime) { 
+        const sound = document.getElementById('msgSound'); 
+        if(sound) sound.play().catch(e=>{}); 
+    }
+    
+    setTimeout(() => checkScrollPosition(), 50);
+}
+    
+function showReactionPicker(msgElement, msgId, isMyMessage) {
+    if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
+    const picker = document.createElement('div');
+    picker.className = 'reaction-picker';
+    
+    // Указываем пути к вашим картинкам вместо эмодзи
+    const reactions = [
+        'image/emo1.png', 
+        'image/emo2.png', 
+        'image/emo3.png', 
+        'image/emo4.png', 
+        'image/emo5.png', 
+        'image/emo6.png'
+    ];
+    
+    reactions.forEach(imgPath => {
+        const span = document.createElement('span');
+        span.className = 'reaction-emoji';
+        
+        // Внутрь пикера кладем картинку
+        const img = document.createElement('img');
+        img.src = imgPath;
+        img.draggable = false;
+        span.appendChild(img);
+        
+        span.onclick = (e) => {
+            e.stopPropagation();
+            sendReactionToggle(msgId, imgPath); // Передаем путь к картинке как ID реакции
+            picker.remove();
+            activeReactionPicker = null;
+        };
+        picker.appendChild(span);
+    });
+    
+    const rect = msgElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    let top = rect.top - 50;
+    if (top < 10) top = rect.bottom + 10;
+    if (top + 60 > viewportHeight) top = viewportHeight - 70;
+    if (top < 0) top = 5;
+    
+    let left;
+    if (isMyMessage) {
+        left = rect.left - 230 - 8; // Немного увеличили ширину под картинки
+        if (left < 5) left = rect.right + 2;
+    } else {
+        left = rect.right - 28;
+        if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
+    }
+    if (left < 5) left = 5;
+    if (left + 230 > viewportWidth) left = viewportWidth - 235;
+    
+    picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
+    document.body.appendChild(picker);
+    activeReactionPicker = picker;
+    
+    const closePicker = (e) => {
+        if (picker && !picker.contains(e.target)) {
+            picker.remove();
+            activeReactionPicker = null;
+            document.removeEventListener('click', closePicker);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closePicker), 10);
+}
     
     function sendReactionToggle(msgId, emoji) {
         if (!currentConn || !currentConn.open) return;
@@ -1805,47 +1734,51 @@
         updateReactionsUI(msgId);
     }
     
-    function updateReactionsUI(msgId) {
-        const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
-        if (!targetMsg) return;
-        let reactionsContainer = targetMsg.querySelector('.reactions-container');
-        if (reactionsContainer) reactionsContainer.remove();
-        
-        const store = reactionsStore.get(msgId);
-        if (!store) return;
-        
-        reactionsContainer = document.createElement('div');
-        reactionsContainer.className = 'reactions-container';
-        
-        const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
+function updateReactionsUI(msgId) {
+    const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+    if (!targetMsg) return;
+    let reactionsContainer = targetMsg.querySelector('.reactions-container');
+    if (reactionsContainer) reactionsContainer.remove();
+    
+    const store = reactionsStore.get(msgId);
+    if (!store) return;
+    
+    reactionsContainer = document.createElement('div');
+    reactionsContainer.className = 'reactions-container';
+    
+    const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
 
-        if (store.my && store.peer && store.my === store.peer) {
+    if (store.my && store.peer && store.my === store.peer) {
+        const badge = document.createElement('div');
+        badge.className = 'reaction-badge my-reaction';
+        badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
+        badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
+        reactionsContainer.appendChild(badge);
+    } else {
+        if (store.my) {
             const badge = document.createElement('div');
             badge.className = 'reaction-badge my-reaction';
-            badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
+            badge.innerHTML = createImgHTML(store.my);
             badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
             reactionsContainer.appendChild(badge);
-        } else {
-            if (store.my) {
-                const badge = document.createElement('div');
-                badge.className = 'reaction-badge my-reaction';
-                badge.innerHTML = createImgHTML(store.my);
-                badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
-                reactionsContainer.appendChild(badge);
-            }
-            if (store.peer) {
-                const badge = document.createElement('div');
-                badge.className = 'reaction-badge';
-                badge.innerHTML = createImgHTML(store.peer);
-                badge.onclick = (e) => { 
-                    e.stopPropagation(); 
-                    sendReactionToggle(msgId, store.peer); 
-                };
-                reactionsContainer.appendChild(badge);
-            }
         }
-        if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
+        if (store.peer) {
+            const badge = document.createElement('div');
+            badge.className = 'reaction-badge'; // Можно добавить класс, если нужно визуально отличать
+            badge.innerHTML = createImgHTML(store.peer);
+            
+            // ИСПРАВЛЕНИЕ ЗДЕСЬ: делаем кликабельной реакцию собеседника, 
+            // чтобы при нажатии на нее отправлялась точно такая же ваша реакция
+            badge.onclick = (e) => { 
+                e.stopPropagation(); 
+                sendReactionToggle(msgId, store.peer); 
+            };
+            
+            reactionsContainer.appendChild(badge);
+        }
     }
+    if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
+}
     
     function checkActiveChatState() {
         const wrapper = document.getElementById('activeChatWrapper');
@@ -1853,6 +1786,7 @@
         if (!wrapper || !placeholder) return;
 
         if (isDesktop) {
+            // На ПК чат всегда отображается справа: либо активный контент, либо "NO ACTIVE CHAT"
             if (currentChatPeer) {
                 wrapper.style.display = 'flex';
                 placeholder.style.display = 'none';
@@ -1861,6 +1795,7 @@
                 placeholder.style.display = 'flex';
             }
         } else {
+            // На мобильных/планшетах используется старое поведение с экранами
             placeholder.style.display = 'none';
             wrapper.style.display = 'flex';
         }
@@ -1930,7 +1865,7 @@
             }
         });
         
-        connection.on('data', async (payload) => {
+        connection.on('data', (payload) => {
             const chatData = activeChats.get(peerId);
             if (!chatData) return;
             
@@ -1938,9 +1873,9 @@
                 chatData.nick = payload.nick;
                 chatData.avatar = payload.avatar;
                 chatData.status = payload.status || 'online';
-                const savedDisplay = await getSettingFromDB(`display_name_${peerId}`);
+                const savedDisplay = localStorage.getItem(`display_name_${peerId}`);
                 chatData.displayName = savedDisplay || chatData.nick;
-                saveChatToDB(peerId, chatData);
+                saveAllChats();
                 updatePeerStatusUI(peerId, chatData.status);
                 if (currentChatPeer === peerId) {
                     peerNickChat.innerText = chatData.displayName;
@@ -1953,23 +1888,21 @@
                 chatData.lastMessage = payload.type === 'text' ? 
                     (payload.data.length > 30 ? payload.data.substring(0,27)+'...' : payload.data) : 
                     (payload.type === 'image' ? '✿ Photo' : '♪ Voice');
-                
-                chatData.lastTime = Date.now();
-
                 if (currentChatPeer !== peerId) chatData.unreadCount = (chatData.unreadCount || 0) + 1;
                 if (!chatData.history) chatData.history = [];
                 
                 const exists = chatData.history.some(m => m.msgId === payload.msgId);
                 if (!exists) {
-                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: chatData.lastTime, msgId: payload.msgId });
+                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: Date.now(), msgId: payload.msgId });
                     if (chatData.history.length > 50) chatData.history.shift();
-                    saveChatToDB(peerId, chatData);
+                    saveAllChats();
                     if (currentChatPeer === peerId) {
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
                         const sound = document.getElementById('msgSound');
                         if(sound) sound.play().catch(e=>{});
+                    } else {
+                        updateChatsListUI();
                     }
-                    updateChatsListUI();
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
@@ -1989,7 +1922,7 @@
             if (chatData) {
                 chatData.status = 'offline';
                 updatePeerStatusUI(peerId, 'offline');
-                saveChatToDB(peerId, chatData);
+                saveAllChats();
                 updateChatsListUI();
                 if (currentChatPeer === peerId) updateStatus('OFFLINE', '#aa5555');
             }
@@ -2023,7 +1956,6 @@
         
         chat.unreadCount = 0;
         loadChatHistoryForPeer(peerId);
-        saveChatToDB(peerId, chat);
         
         peerNickChat.innerText = chat.displayName || chat.nick;
         peerAvatarChat.src = chat.avatar || 'image/ava1.png';
@@ -2047,7 +1979,7 @@
         };
         
         document.getElementById('confirmCloseYes').onclick = () => {
-            animateModalClose(overlay, async () => {
+            animateModalClose(overlay, () => {
                 const chat = activeChats.get(peerId);
                 if (chat) {
                     if (chat.conn && chat.conn.open) {
@@ -2055,7 +1987,7 @@
                         chat.conn.close();
                     }
                     activeChats.delete(peerId);
-                    await removeChatFromDB(peerId);
+                    saveAllChats();
                     if (currentChatPeer === peerId) {
                         currentChatPeer = null;
                         currentConn = null;
@@ -2080,8 +2012,7 @@
         
         updateStatus('CONNECTING...', '#b0b0b0');
         const newConn = peer.connect(friendNick);
-        
-        const newChatObj = {
+        activeChats.set(friendNick, {
             conn: newConn,
             nick: friendNick,
             avatar: 'image/ava1.png',
@@ -2089,11 +2020,9 @@
             displayName: friendNick,
             unreadCount: 0,
             lastMessage: '---',
-            lastTime: Date.now(),
             history: []
-        };
-        activeChats.set(friendNick, newChatObj);
-        saveChatToDB(friendNick, newChatObj);
+        });
+        saveAllChats();
         setupConnectionForPeer(friendNick, newConn);
         openChat(friendNick);
     }
@@ -2113,12 +2042,10 @@
         const chat = activeChats.get(currentChatPeer);
         if (chat) {
             chat.lastMessage = text.length > 30 ? text.substring(0,27)+'...' : text;
-            chat.lastTime = Date.now();
-
             if (!chat.history) chat.history = [];
-            chat.history.push({ data: text, side: 'my', type: 'text', time: chat.lastTime, msgId: msgId });
+            chat.history.push({ data: text, side: 'my', type: 'text', time: Date.now(), msgId: msgId });
             if (chat.history.length > 50) chat.history.shift();
-            saveChatToDB(currentChatPeer, chat);
+            saveAllChats();
             updateChatsListUI();
         }
         input.value = '';
@@ -2136,11 +2063,10 @@
             const chat = activeChats.get(currentChatPeer);
             if (chat) {
                 chat.lastMessage = '✿ Photo';
-                chat.lastTime = Date.now();
                 if (!chat.history) chat.history = [];
-                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: chat.lastTime, msgId: msgId });
+                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: Date.now(), msgId: msgId });
                 if (chat.history.length > 50) chat.history.shift();
-                saveChatToDB(currentChatPeer, chat);
+                saveAllChats();
                 updateChatsListUI();
             }
         };
@@ -2175,11 +2101,10 @@
                     const chat = activeChats.get(currentChatPeer);
                     if (chat) {
                         chat.lastMessage = '♪ Voice';
-                        chat.lastTime = Date.now();
                         if (!chat.history) chat.history = [];
-                        chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: chat.lastTime, msgId: msgId });
+                        chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: Date.now(), msgId: msgId });
                         if (chat.history.length > 50) chat.history.shift();
-                        saveChatToDB(currentChatPeer, chat);
+                        saveAllChats();
                         updateChatsListUI();
                     }
                 };
@@ -2212,7 +2137,7 @@
     function handleIncomingCall(incomingCall) {
         const callerId = incomingCall.peer;
         if (!activeChats.has(callerId)) {
-            const newChatObj = {
+            activeChats.set(callerId, {
                 conn: null,
                 nick: callerId,
                 avatar: 'image/ava1.png',
@@ -2220,11 +2145,9 @@
                 displayName: callerId,
                 unreadCount: 0,
                 lastMessage: '---',
-                lastTime: Date.now(),
                 history: []
-            };
-            activeChats.set(callerId, newChatObj);
-            saveChatToDB(callerId, newChatObj);
+            });
+            saveAllChats();
             updateChatsListUI();
         }
 
@@ -2466,15 +2389,15 @@
             animateModalClose(document.getElementById('peerProfileModal'));
         };
         
-        newSaveBtn.onclick = async () => {
+        newSaveBtn.onclick = () => {
             const newDisplayName = document.getElementById('editPeerDisplayName').value.trim();
             
             if (newDisplayName === "") {
                 chat.displayName = chat.nick;
-                await saveSettingToDB(`display_name_${peerId}`, null);
+                localStorage.removeItem(`display_name_${peerId}`);
             } else {
                 chat.displayName = newDisplayName;
-                await saveSettingToDB(`display_name_${peerId}`, newDisplayName);
+                localStorage.setItem(`display_name_${peerId}`, newDisplayName);
             }
             
             if (currentChatPeer === peerId) {
@@ -2482,25 +2405,25 @@
             }
             
             updateChatsListUI();
-            saveChatToDB(peerId, chat);
+            saveAllChats();
             animateModalClose(document.getElementById('peerProfileModal'));
         };
     }
     
     let tempAvatar = myAvatar;
     
-    async function startWithNick(nick, fromRegistration = true) {
+    function startWithNick(nick, fromRegistration = true) {
         if (peer) peer.destroy();
         peer = new Peer(nick, { debug: 2 });
         
-        peer.on('open', async () => {
+        peer.on('open', () => {
             updateStatus('ONLINE', '#da8f27');
             if (fromRegistration) {
                 myNick = nick;
                 localStorage.setItem('soc-nickname', myNick);
                 updateHomeUI();
             }
-            await loadSavedChats();
+            loadSavedChats();
             for (const [peerId, chat] of activeChats.entries()) {
                 if (peerId !== myNick && (!chat.conn || !chat.conn.open)) {
                     const newConn = peer.connect(peerId);
@@ -2529,7 +2452,7 @@
                 if (existing.conn && existing.conn.open) { incomingConn.close(); return; }
             }
             if (activeChats.size >= 30) { incomingConn.close(); return; }
-            const newChatObj = {
+            activeChats.set(peerId, {
                 conn: incomingConn,
                 nick: peerId,
                 avatar: 'image/ava1.png',
@@ -2537,11 +2460,9 @@
                 displayName: peerId,
                 unreadCount: 0,
                 lastMessage: '---',
-                lastTime: Date.now(),
                 history: []
-            };
-            activeChats.set(peerId, newChatObj);
-            saveChatToDB(peerId, newChatObj);
+            });
+            saveAllChats();
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
@@ -2638,7 +2559,7 @@
                 if (existing.conn && existing.conn.open) { incomingConn.close(); return; }
             }
             if (activeChats.size >= 30) { incomingConn.close(); return; }
-            const newChatObj = {
+            activeChats.set(peerId, {
                 conn: incomingConn,
                 nick: peerId,
                 avatar: 'image/ava1.png',
@@ -2646,11 +2567,9 @@
                 displayName: peerId,
                 unreadCount: 0,
                 lastMessage: '---',
-                lastTime: Date.now(),
                 history: []
-            };
-            activeChats.set(peerId, newChatObj);
-            saveChatToDB(peerId, newChatObj);
+            });
+            saveAllChats();
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
@@ -2666,39 +2585,63 @@
     if (scrollDownBtn) scrollDownBtn.addEventListener('click', scrollToBottom);
     if (chatMessagesDiv) chatMessagesDiv.addEventListener('scroll', onChatScroll);
     
-    if (!myNick) {
+    document.getElementById('peer-nick-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
+    });
+    
+    const dropOverlay = document.getElementById('dropOverlay');
+    window.addEventListener('dragover', (e) => { e.preventDefault(); });
+    window.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        if ((isDesktop || chatScreen.classList.contains('chat-visible')) && currentConn && currentConn.open) {
+            dropOverlay.classList.add('active');
+        }
+    });
+    window.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+            dropOverlay.classList.remove('active');
+        }
+    });
+    window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropOverlay.classList.remove('active');
+        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.indexOf('image') !== -1) sendFile(files[0]);
+    });
+    
+    document.addEventListener('paste', (e) => {
+        if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file) sendFile(file);
+                return;
+            }
+        }
+    });
+    
+    checkActiveChatState();
+
+    if(!myNick || !isValidNick(myNick)) {
         showRegistrationModal();
     } else {
-        startWithNick(myNick, false);
-    }
-    
-    window.addEventListener('load', () => {
-        const preloader = document.getElementById('preloader');
-        const mainApp = document.getElementById('mainApp');
-        setTimeout(() => {
-            if(preloader) {
-                preloader.classList.add('hide-preloader');
-                setTimeout(() => preloader.remove(), 500);
-            }
-            if(mainApp) mainApp.classList.add('app-visible');
-        }, 800);
-    });
-
-    // Автоматический вход при перезагрузке страницы, если ник уже был сохранен
-window.addEventListener('DOMContentLoaded', () => {
-    if (myNick && isValidNick(myNick)) {
-        // Закрываем модальное окно регистрации на всякий случай
-        const regModal = document.getElementById('registrationModal');
-        if (regModal) regModal.style.display = 'none';
-        
-        // Запускаем приложение со старым ником
         startWithNick(myNick, false);
         updateHomeUI();
-    } else {
-        // Если ника нет — показываем окно регистрации
-        showRegistrationModal();
     }
-});
+    
+    setTimeout(() => {
+        document.getElementById('preloader').classList.add('hide-preloader');
+        document.getElementById('mainApp').classList.add('app-visible');
+    }, 2000);
+    
+    window.addEventListener('beforeunload', () => {
+        if (currentConn && currentConn.open) currentConn.close();
+        if (peer) peer.destroy();
+    });
 </script>
 </body>
 </html>
