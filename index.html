@@ -1403,6 +1403,124 @@
     let isUserScrolling = false;
     let scrollTimeout = null;
 
+    // --- INDEXEDDB IMPLEMENTATION ---
+    const DB_NAME = 'SOC_Messenger_DB';
+    const DB_VERSION = 1;
+    const STORE_CHATS = 'chats';
+    const STORE_SETTINGS = 'settings';
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_CHATS)) {
+                    db.createObjectStore(STORE_CHATS); // ключ — peerId
+                }
+                if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+                    db.createObjectStore(STORE_SETTINGS); // для настроек и кастомных имен
+                }
+            };
+        });
+    }
+
+    async function saveChatToDB(peerId, chatData) {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_CHATS, 'readwrite');
+            const store = tx.objectStore(STORE_CHATS);
+            store.put({
+                nick: chatData.nick,
+                avatar: chatData.avatar,
+                status: chatData.status,
+                displayName: chatData.displayName,
+                unreadCount: chatData.unreadCount,
+                lastMessage: chatData.lastMessage,
+                lastTime: chatData.lastTime || 0,
+                history: chatData.history || []
+            }, peerId);
+            return tx.complete;
+        } catch (e) {
+            console.error("Error saving chat to IndexedDB:", e);
+        }
+    }
+
+    async function removeChatFromDB(peerId) {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_CHATS, 'readwrite');
+            tx.objectStore(STORE_CHATS).delete(peerId);
+            return tx.complete;
+        } catch (e) {
+            console.error("Error removing chat from IndexedDB:", e);
+        }
+    }
+
+    async function loadSavedChats() {
+        try {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_CHATS, 'readonly');
+                const store = tx.objectStore(STORE_CHATS);
+                const request = store.openCursor();
+
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const peerId = cursor.key;
+                        const data = cursor.value;
+                        activeChats.set(peerId, {
+                            conn: null,
+                            nick: data.nick,
+                            avatar: data.avatar || 'image/ava1.png',
+                            status: data.status || 'offline',
+                            displayName: data.displayName || data.nick,
+                            unreadCount: data.unreadCount || 0,
+                            lastMessage: data.lastMessage || '---',
+                            lastTime: data.lastTime || 0,
+                            history: data.history || []
+                        });
+                        cursor.continue();
+                    } else {
+                        updateChatsListUI();
+                        resolve();
+                    }
+                };
+                request.onerror = () => reject(request.error);
+            });
+        } catch (e) {
+            console.error("Error loading chats from IndexedDB:", e);
+        }
+    }
+
+    async function saveSettingToDB(key, value) {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_SETTINGS, 'readwrite');
+            tx.objectStore(STORE_SETTINGS).put(value, key);
+            return tx.complete;
+        } catch (e) {
+            console.error("Error saving setting:", e);
+        }
+    }
+
+    async function getSettingFromDB(key) {
+        try {
+            const db = await openDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_SETTINGS, 'readonly');
+                const req = tx.objectStore(STORE_SETTINGS).get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(undefined);
+            });
+        } catch (e) {
+            return undefined;
+        }
+    }
+    // --- END INDEXEDDB IMPLEMENTATION ---
+
     function playDialingSound() {
         const sound = document.getElementById('dialingSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
@@ -1458,53 +1576,11 @@
         return /^[a-zA-Z0-9_]{3,20}$/.test(nick);
     }
     
-    function saveAllChats() {
-        const toSave = {};
-        for (const [peerId, chat] of activeChats.entries()) {
-            toSave[peerId] = {
-                nick: chat.nick,
-                avatar: chat.avatar,
-                status: chat.status,
-                displayName: chat.displayName,
-                unreadCount: chat.unreadCount,
-                lastMessage: chat.lastMessage,
-                lastTime: chat.lastTime || 0,
-                history: chat.history || []
-            };
-        }
-        localStorage.setItem('soc-active-chats', JSON.stringify(toSave));
-    }
-    
-    function loadSavedChats() {
-        const saved = localStorage.getItem('soc-active-chats');
-        if (saved) {
-            try {
-                const chats = JSON.parse(saved);
-                for (const [peerId, data] of Object.entries(chats)) {
-                    if (data.nick) {
-                        activeChats.set(peerId, {
-                            conn: null,
-                            nick: data.nick,
-                            avatar: data.avatar || 'image/ava1.png',
-                            status: data.status || 'offline',
-                            displayName: data.displayName || data.nick,
-                            unreadCount: data.unreadCount || 0,
-                            lastMessage: data.lastMessage || '---',
-                            lastTime: data.lastTime || 0,
-                            history: data.history || []
-                        });
-                    }
-                }
-            } catch(e) { console.error(e); }
-        }
-    }
-    
     function updateChatsListUI() {
         let container = document.getElementById('chatsListContainer');
         if (!container) return;
         container.innerHTML = '';
         
-        // Сортируем чаты по времени последнего сообщения / создания (новейшие сверху, как в Telegram)
         let sortedChats = Array.from(activeChats.entries()).sort((a, b) => {
             return (b[1].lastTime || 0) - (a[1].lastTime || 0);
         });
@@ -1854,7 +1930,7 @@
             }
         });
         
-        connection.on('data', (payload) => {
+        connection.on('data', async (payload) => {
             const chatData = activeChats.get(peerId);
             if (!chatData) return;
             
@@ -1862,9 +1938,9 @@
                 chatData.nick = payload.nick;
                 chatData.avatar = payload.avatar;
                 chatData.status = payload.status || 'online';
-                const savedDisplay = localStorage.getItem(`display_name_${peerId}`);
+                const savedDisplay = await getSettingFromDB(`display_name_${peerId}`);
                 chatData.displayName = savedDisplay || chatData.nick;
-                saveAllChats();
+                saveChatToDB(peerId, chatData);
                 updatePeerStatusUI(peerId, chatData.status);
                 if (currentChatPeer === peerId) {
                     peerNickChat.innerText = chatData.displayName;
@@ -1878,7 +1954,6 @@
                     (payload.data.length > 30 ? payload.data.substring(0,27)+'...' : payload.data) : 
                     (payload.type === 'image' ? '✿ Photo' : '♪ Voice');
                 
-                // ОБНОВЛЯЕМ ВРЕМЯ АКТИВНОСТИ ПРИ ПОЛУЧЕНИИ СООБЩЕНИЯ (ЧАТ ПОДНИМАЕТСЯ НАВЕРХ)
                 chatData.lastTime = Date.now();
 
                 if (currentChatPeer !== peerId) chatData.unreadCount = (chatData.unreadCount || 0) + 1;
@@ -1888,13 +1963,13 @@
                 if (!exists) {
                     chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: chatData.lastTime, msgId: payload.msgId });
                     if (chatData.history.length > 50) chatData.history.shift();
-                    saveAllChats();
+                    saveChatToDB(peerId, chatData);
                     if (currentChatPeer === peerId) {
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
                         const sound = document.getElementById('msgSound');
                         if(sound) sound.play().catch(e=>{});
                     }
-                    updateChatsListUI(); // Перерисовываем список, чтобы чат поднялся наверх
+                    updateChatsListUI();
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
@@ -1914,7 +1989,7 @@
             if (chatData) {
                 chatData.status = 'offline';
                 updatePeerStatusUI(peerId, 'offline');
-                saveAllChats();
+                saveChatToDB(peerId, chatData);
                 updateChatsListUI();
                 if (currentChatPeer === peerId) updateStatus('OFFLINE', '#aa5555');
             }
@@ -1948,6 +2023,7 @@
         
         chat.unreadCount = 0;
         loadChatHistoryForPeer(peerId);
+        saveChatToDB(peerId, chat);
         
         peerNickChat.innerText = chat.displayName || chat.nick;
         peerAvatarChat.src = chat.avatar || 'image/ava1.png';
@@ -1971,7 +2047,7 @@
         };
         
         document.getElementById('confirmCloseYes').onclick = () => {
-            animateModalClose(overlay, () => {
+            animateModalClose(overlay, async () => {
                 const chat = activeChats.get(peerId);
                 if (chat) {
                     if (chat.conn && chat.conn.open) {
@@ -1979,7 +2055,7 @@
                         chat.conn.close();
                     }
                     activeChats.delete(peerId);
-                    saveAllChats();
+                    await removeChatFromDB(peerId);
                     if (currentChatPeer === peerId) {
                         currentChatPeer = null;
                         currentConn = null;
@@ -2005,8 +2081,7 @@
         updateStatus('CONNECTING...', '#b0b0b0');
         const newConn = peer.connect(friendNick);
         
-        // НОВЫЙ ЧАТ ПОЛУЧАЕТ ТЕКУЩЕЕ ВРЕМЯ. ЕСЛИ СООБЩЕНИЙ ЕЩЕ НЕ БЫЛО, ОН БУДЕТ САМЫМ НОВЫМ (ИЛИ ВСТАНИТ ПО ВРЕМЕНИ СОЗДАНИЯ).
-        activeChats.set(friendNick, {
+        const newChatObj = {
             conn: newConn,
             nick: friendNick,
             avatar: 'image/ava1.png',
@@ -2014,10 +2089,11 @@
             displayName: friendNick,
             unreadCount: 0,
             lastMessage: '---',
-            lastTime: Date.now(), // Фиксируем время создания
+            lastTime: Date.now(),
             history: []
-        });
-        saveAllChats();
+        };
+        activeChats.set(friendNick, newChatObj);
+        saveChatToDB(friendNick, newChatObj);
         setupConnectionForPeer(friendNick, newConn);
         openChat(friendNick);
     }
@@ -2037,15 +2113,13 @@
         const chat = activeChats.get(currentChatPeer);
         if (chat) {
             chat.lastMessage = text.length > 30 ? text.substring(0,27)+'...' : text;
-            
-            // ОБНОВЛЯЕМ ВРЕМЯ ПРИ ОТПРАВКЕ СООБЩЕНИЯ (ЧАТ ПОДНИМАЕТСЯ НАВЕРХ)
             chat.lastTime = Date.now();
 
             if (!chat.history) chat.history = [];
             chat.history.push({ data: text, side: 'my', type: 'text', time: chat.lastTime, msgId: msgId });
             if (chat.history.length > 50) chat.history.shift();
-            saveAllChats();
-            updateChatsListUI(); // Перерисовываем список, чтобы чат поднялся наверх
+            saveChatToDB(currentChatPeer, chat);
+            updateChatsListUI();
         }
         input.value = '';
     }
@@ -2062,11 +2136,11 @@
             const chat = activeChats.get(currentChatPeer);
             if (chat) {
                 chat.lastMessage = '✿ Photo';
-                chat.lastTime = Date.now(); // Обновляем время при отправке картинки
+                chat.lastTime = Date.now();
                 if (!chat.history) chat.history = [];
                 chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: chat.lastTime, msgId: msgId });
                 if (chat.history.length > 50) chat.history.shift();
-                saveAllChats();
+                saveChatToDB(currentChatPeer, chat);
                 updateChatsListUI();
             }
         };
@@ -2101,11 +2175,11 @@
                     const chat = activeChats.get(currentChatPeer);
                     if (chat) {
                         chat.lastMessage = '♪ Voice';
-                        chat.lastTime = Date.now(); // Обновляем время при отправке голоса
+                        chat.lastTime = Date.now();
                         if (!chat.history) chat.history = [];
                         chat.history.push({ data: ev.target.result, side: 'my', type: 'audio', time: chat.lastTime, msgId: msgId });
                         if (chat.history.length > 50) chat.history.shift();
-                        saveAllChats();
+                        saveChatToDB(currentChatPeer, chat);
                         updateChatsListUI();
                     }
                 };
@@ -2138,7 +2212,7 @@
     function handleIncomingCall(incomingCall) {
         const callerId = incomingCall.peer;
         if (!activeChats.has(callerId)) {
-            activeChats.set(callerId, {
+            const newChatObj = {
                 conn: null,
                 nick: callerId,
                 avatar: 'image/ava1.png',
@@ -2148,8 +2222,9 @@
                 lastMessage: '---',
                 lastTime: Date.now(),
                 history: []
-            });
-            saveAllChats();
+            };
+            activeChats.set(callerId, newChatObj);
+            saveChatToDB(callerId, newChatObj);
             updateChatsListUI();
         }
 
@@ -2391,15 +2466,15 @@
             animateModalClose(document.getElementById('peerProfileModal'));
         };
         
-        newSaveBtn.onclick = () => {
+        newSaveBtn.onclick = async () => {
             const newDisplayName = document.getElementById('editPeerDisplayName').value.trim();
             
             if (newDisplayName === "") {
                 chat.displayName = chat.nick;
-                localStorage.removeItem(`display_name_${peerId}`);
+                await saveSettingToDB(`display_name_${peerId}`, null);
             } else {
                 chat.displayName = newDisplayName;
-                localStorage.setItem(`display_name_${peerId}`, newDisplayName);
+                await saveSettingToDB(`display_name_${peerId}`, newDisplayName);
             }
             
             if (currentChatPeer === peerId) {
@@ -2407,25 +2482,25 @@
             }
             
             updateChatsListUI();
-            saveAllChats();
+            saveChatToDB(peerId, chat);
             animateModalClose(document.getElementById('peerProfileModal'));
         };
     }
     
     let tempAvatar = myAvatar;
     
-    function startWithNick(nick, fromRegistration = true) {
+    async function startWithNick(nick, fromRegistration = true) {
         if (peer) peer.destroy();
         peer = new Peer(nick, { debug: 2 });
         
-        peer.on('open', () => {
+        peer.on('open', async () => {
             updateStatus('ONLINE', '#da8f27');
             if (fromRegistration) {
                 myNick = nick;
                 localStorage.setItem('soc-nickname', myNick);
                 updateHomeUI();
             }
-            loadSavedChats();
+            await loadSavedChats();
             for (const [peerId, chat] of activeChats.entries()) {
                 if (peerId !== myNick && (!chat.conn || !chat.conn.open)) {
                     const newConn = peer.connect(peerId);
@@ -2454,7 +2529,7 @@
                 if (existing.conn && existing.conn.open) { incomingConn.close(); return; }
             }
             if (activeChats.size >= 30) { incomingConn.close(); return; }
-            activeChats.set(peerId, {
+            const newChatObj = {
                 conn: incomingConn,
                 nick: peerId,
                 avatar: 'image/ava1.png',
@@ -2464,8 +2539,9 @@
                 lastMessage: '---',
                 lastTime: Date.now(),
                 history: []
-            });
-            saveAllChats();
+            };
+            activeChats.set(peerId, newChatObj);
+            saveChatToDB(peerId, newChatObj);
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
@@ -2562,7 +2638,7 @@
                 if (existing.conn && existing.conn.open) { incomingConn.close(); return; }
             }
             if (activeChats.size >= 30) { incomingConn.close(); return; }
-            activeChats.set(peerId, {
+            const newChatObj = {
                 conn: incomingConn,
                 nick: peerId,
                 avatar: 'image/ava1.png',
@@ -2572,8 +2648,9 @@
                 lastMessage: '---',
                 lastTime: Date.now(),
                 history: []
-            });
-            saveAllChats();
+            };
+            activeChats.set(peerId, newChatObj);
+            saveChatToDB(peerId, newChatObj);
             setupConnectionForPeer(peerId, incomingConn);
             updateChatsListUI();
         });
@@ -2606,6 +2683,22 @@
             if(mainApp) mainApp.classList.add('app-visible');
         }, 800);
     });
+
+    // Автоматический вход при перезагрузке страницы, если ник уже был сохранен
+window.addEventListener('DOMContentLoaded', () => {
+    if (myNick && isValidNick(myNick)) {
+        // Закрываем модальное окно регистрации на всякий случай
+        const regModal = document.getElementById('registrationModal');
+        if (regModal) regModal.style.display = 'none';
+        
+        // Запускаем приложение со старым ником
+        startWithNick(myNick, false);
+        updateHomeUI();
+    } else {
+        // Если ника нет — показываем окно регистрации
+        showRegistrationModal();
+    }
+});
 </script>
 </body>
 </html>
