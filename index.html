@@ -1353,7 +1353,7 @@
     <div class="modal">
         <div class="welcome-title">SOC.</div>
         <div class="welcome-sub">WELCOME!</div>
-        <input type="text" id="regNickInput" class="nick-input-modal" placeholder="3-20 characters (a-z, 0-9, _)" maxlength="20">
+        <input type="text" id="regNickInput" class="nick-input-modal" placeholder="3-20 characters (A-z, 0-9, _)" maxlength="20">
         <button class="reg-primary-btn" id="regSubmitBtn">REGISTRATION</button>
         <button class="reg-rules-btn" id="regRulesBtn">RULES & DISCLAIMER</button>
     </div>
@@ -2034,13 +2034,39 @@ function updateReactionsUI(msgId) {
         };
     }
     
-    function connectToPeer() {
-        if (!peer) { showAlert("Initializing... Please wait"); return; }
+function connectToPeer() {
+        // Check PeerJS connection status
+        if (!peer || peer.destroyed) { 
+            showAlert("Connection error: PeerJS is not initialized"); 
+            return; 
+        }
+        
         const friendNick = document.getElementById('peer-nick-input').value.trim();
-        if (!friendNick) { showAlert("Enter friend's nickname"); return; }
-        if (friendNick === myNick) { showAlert("You cannot connect to yourself"); return; }
-        if (activeChats.has(friendNick)) { openChat(friendNick); return; }
-        if (activeChats.size >= 30) { showAlert("Maximum 30 simultaneous chats"); return; }
+        
+        // Check length (at least 3 characters) and allowed characters (A-z, 0-9, _)
+        if (!friendNick || friendNick.length < 3) { 
+            showAlert("Nickname must be at least 3 characters long"); 
+            return; 
+        }
+        
+        const regex = /^[A-Za-z0-9_]+$/;
+        if (!regex.test(friendNick)) {
+            showAlert("Only Latin letters (A-z), numbers (0-9), and underscores (_) are allowed"); 
+            return; 
+        }
+        
+        if (friendNick === myNick) { 
+            showAlert("You cannot connect to yourself"); 
+            return; 
+        }
+        if (activeChats.has(friendNick)) { 
+            openChat(friendNick); 
+            return; 
+        }
+        if (activeChats.size >= 30) { 
+            showAlert("You can have a maximum of 30 open chats simultaneously"); 
+            return; 
+        }
         
         updateStatus('CONNECTING...', '#b0b0b0');
         const newConn = peer.connect(friendNick);
