@@ -1183,6 +1183,38 @@
     align-items: center;
     gap: 4px;
 }
+
+/* Основные стили для всех скроллеров в приложении */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333; /* Цвет полоски */
+    border-radius: 10px;
+    border: 1px solid #000; /* Контраст с фоном */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Цвет при наведении */
+}
+
+/* Специфично для списка чатов (home-scrollable) */
+.home-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
+/* Специфично для сообщений чата */
+#chatMessages {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
     </style>
 </head>
 <body>
