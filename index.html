@@ -211,7 +211,7 @@
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-        .main-profile-card:active { transform: scale(0.98); background: #151515; }
+        .main-profile-card:active { transform: none; background: #151515; }
         
         .avatar-large {
             width: 90px;
@@ -242,7 +242,7 @@
         .active-chat-row.hidden { display: none !important; }
 
         .active-chat-row:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -276,7 +276,7 @@
             border-radius: 30px;
             cursor: pointer;
             flex-shrink: 0;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -288,7 +288,7 @@
             opacity: 0.8;
         }
         .close-chat-icon:hover {
-            transform: scale(0.92);
+            transform: none;
             background: #3a3a3a;
         }
         .close-chat-icon:hover img {
@@ -330,7 +330,7 @@
         }
 
         #peer-nick-input:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -345,10 +345,10 @@
             font-size: 0.75rem;
             color: #ddd;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .connect-btn:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -379,10 +379,10 @@
             color: #888;
             cursor: pointer;
             flex-shrink: 0;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .rules-bottom-btn:hover {
-            transform: scale(0.97);
+            transform: none;
             background: #222;
             color: #aaa;
         }
@@ -404,7 +404,7 @@
             border-radius: 30px;
             cursor: pointer;
             color: white;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -416,7 +416,7 @@
             opacity: 0.8;
         }
         .back-home-btn:hover {
-            transform: scale(0.9);
+            transform: none;
             background: #2a2a2a;
         }
         .back-home-btn:hover img {
@@ -435,11 +435,11 @@
             padding: 6px 16px;
             border-radius: 40px;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             border: 1px solid #3a3a3a;
         }
         .peer-info-button:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #2a2a2a;
         }
         .peer-info-avatar { width: 36px; height: 36px; border-radius: 50%; background: #2a2a2a; overflow: hidden; position: relative; }
@@ -457,7 +457,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .call-btn-header img {
             width: 20px;
@@ -466,7 +466,7 @@
             opacity: 0.8;
         }
         .call-btn-header:hover {
-            transform: scale(0.9);
+            transform: none;
             background: #2a2a2a;
         }
         .call-btn-header:hover img {
@@ -598,12 +598,12 @@
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             overflow: hidden;
             padding: 0;
         }
         .btn-icon:hover {
-            transform: scale(0.9);
+            transform: none;
             background: #2a2a2a;
         }
         .btn-red { background: #2a2a2a !important; }
@@ -664,11 +664,11 @@
             justify-content: center;
             cursor: pointer;
             z-index: 30;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .scroll-down-btn:hover {
-            transform: scale(0.92);
+            transform: none;
             background: #2a2a2a;
         }
         .scroll-down-btn img {
@@ -713,12 +713,12 @@
         .modal .status-select option { text-align: left !important; }
 
         @keyframes modalPopIn {
-            0% { opacity: 0; transform: scale(0.95); }
+            0% { opacity: 0; transform: none; }
             100% { opacity: 1; transform: scale(1); }
         }
         @keyframes modalPopOut {
             0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 0; transform: none; }
         }
         .modal-exit { animation: modalPopOut 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
         .modal #modal-text { font-size: 0.9rem; margin-bottom: 18px; color: #ccc; line-height: 1.4; }
@@ -731,11 +731,11 @@
             font-weight: 600;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             border: 1px solid #3a3a3a;
         }
         .modal-btn:hover {
-            transform: scale(0.96);
+            transform: none;
             filter: brightness(0.9);
         }
         .modal-btn:first-child { background: #1f1f1f; color: #ccc; }
@@ -751,10 +751,10 @@
             font-size: 1rem;
             text-align: center;
             outline: none;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .nick-input-modal:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -768,10 +768,10 @@
             font-size: 0.9rem;
             margin: 15px 0;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .status-select:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -783,10 +783,10 @@
             cursor: pointer;
             border: 3px solid #3a3a3a;
             border-radius: 100%;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
         .modal-avatar-container:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #222;
             color: #ffffff;
         }
@@ -805,9 +805,9 @@
             font-size: 14px;
             pointer-events: none;
         }
-        .main-profile-card:hover { transform: scale(0.98); background: #151515; }
+        .main-profile-card:hover { transform: none; background: #151515; }
         .active-chat-row:hover { background: #181818; border-color: #3a3a3a; }
-        #recordBtn { transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1); }
+        #recordBtn { transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease; }
 
         .drop-overlay {
             position: fixed;
@@ -855,13 +855,13 @@
             font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             width: 100%;
             color: #ccc;
             margin-top: 8px;
         }
         .reg-primary-btn:hover {
-            transform: scale(0.96);
+            transform: none;
             background: #2f2f2f;
         }
         .reg-rules-btn {
@@ -1117,7 +1117,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
             flex-shrink: 0;
             padding: 0;
         }
@@ -1135,7 +1135,7 @@
             margin: auto;
         }
         .call-ctrl-btn:hover {
-            transform: scale(0.95);
+            transform: none;
             background: #2a2a2a;
         }
         .call-ctrl-btn.end-call {
