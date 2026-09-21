@@ -5,15 +5,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- GOOGLE SEARCH -->
     <meta name="google-site-verification" content="9HNltdwgCPn0S9VY4EWM63QnXhTMV2CMqPJkRHyLEJI" />
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SOC">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-title" content="SOC">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     <title>SOC</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -127,7 +124,6 @@
         }
         .app.app-visible { opacity: 1; }
 
-        /* Мобильный/планшетный режим по умолчанию */
         .home-screen {
             position: absolute;
             top: 0;
@@ -473,6 +469,11 @@
         }
         .call-btn-header:hover img {
             opacity: 1;
+        }
+        .chat-header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         #chatMessages {
@@ -889,7 +890,6 @@
             }
             .app-wrapper::before, .app-wrapper::after { display: none !important; }
             
-            /* Десктопный режим: левая колонка (список чатов/профиль) */
             .home-screen {
                 position: relative !important;
                 width: 440px !important;
@@ -900,7 +900,6 @@
                 z-index: 10;
             }
             
-            /* Десктопный режим: правая колонка (сам чат) */
             .chat-screen {
                 position: relative !important;
                 flex: 1 !important;
@@ -910,7 +909,6 @@
                 z-index: 10;
             }
             
-            /* На ПК кнопка назад в шапке чата не нужна вовсе */
             .back-home-btn {
                 display: none !important;
             }
@@ -1020,7 +1018,6 @@
             margin: 0 !important;
         }
 
-        /* Заглушка для пустого чата на десктопе и мобилках */
         .empty-chat-placeholder {
             flex: 1;
             display: flex;
@@ -1036,7 +1033,7 @@
         }
         .empty-chat-placeholder span:first-child { font-size: 2.5rem; opacity: 0.2; }
 
-        /* Modal Call Overlay Style */
+        /* ====== Call Modal ====== */
         .call-modal-overlay {
             position: fixed;
             top: 0;
@@ -1067,6 +1064,7 @@
             text-align: center;
             animation: modalPopIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            transition: max-width 0.3s ease, width 0.3s ease;
         }
         .call-avatar-container {
             width: 90px;
@@ -1076,6 +1074,9 @@
             border: 2px solid #3a3a3a;
             margin-bottom: 16px;
             background: #1e1e1e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .call-avatar-container img {
             width: 100%;
@@ -1161,62 +1162,107 @@
             filter: brightness(0);
         }
 
-        /* Стили для картинок реакций */
-.reaction-emoji img, 
-.reaction-badge img {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-    vertical-align: middle;
-    display: inline-block;
-    filter: brightness(0) invert(1);
-    margin-bottom: 5px;
-}
+        /* ====== Video call styles ====== */
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 0;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 0;
+            display: none;
+        }
+        .video-container.active {
+            display: block;
+            height: 300px;
+            padding-bottom: 0;
+            margin-bottom: 16px;
+        }
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+        #localVideo {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 90px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #fff;
+            background: #000;
+            display: block;
+        }
 
-.reaction-emoji {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-}
+        .call-modal-content.expanded {
+            max-width: 640px !important;
+            width: 92vw !important;
+        }
+        .call-modal-content.expanded .video-container.active {
+            height: 480px;
+        }
+        .call-modal-content.expanded .call-avatar-container {
+            display: none;
+        }
 
-.reaction-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
+        /* Стилі для картинок реакцій */
+        .reaction-emoji img, 
+        .reaction-badge img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            vertical-align: middle;
+            display: inline-block;
+            filter: brightness(0) invert(1);
+            margin-bottom: 5px;
+        }
 
-/* Основные стили для всех скроллеров в приложении */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
+        .reaction-emoji {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
+        .reaction-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-::-webkit-scrollbar-thumb {
-    background: #333; /* Цвет полоски */
-    border-radius: 10px;
-    border: 1px solid #000; /* Контраст с фоном */
-}
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #555; /* Цвет при наведении */
-}
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-/* Специфично для списка чатов (home-scrollable) */
-.home-scrollable {
-    scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
-}
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
+            border: 1px solid #000;
+        }
 
-/* Специфично для сообщений чата */
-#chatMessages {
-    scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
-}
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .home-scrollable {
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+
+        #chatMessages {
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
     </style>
 </head>
 <body>
@@ -1265,7 +1311,6 @@
         </div>
 
         <div class="chat-screen" id="chatScreen">
-            <!-- Динамический контейнер чата (если не выбран чат на ПК/телефоне) -->
             <div id="activeChatWrapper" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
                 <div class="chat-header">
                     <button class="back-home-btn" id="backHomeBtn">
@@ -1280,9 +1325,14 @@
                             <div class="peer-info-nick" id="peerNickChat">friend</div>
                         </div>
                     </div>
-                    <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
-                        <img src="image/phone.png" alt="Call" draggable="false">
-                    </button>
+                    <div class="chat-header-actions">
+                        <button class="call-btn-header" id="videoCallBtn" title="Video Call" onclick="startVideoCall()">
+                            <img src="image/video.png" alt="Video" draggable="false">
+                        </button>
+                        <button class="call-btn-header" id="callBtn" title="Audio Call" onclick="startAudioCall()">
+                            <img src="image/phone.png" alt="Call" draggable="false">
+                        </button>
+                    </div>
                 </div>
                 <div id="chatMessages"></div>
                 <div class="input-area">
@@ -1295,7 +1345,6 @@
                     <img src="image/down.png" alt="↓" draggable="false">
                 </button>
             </div>
-            <!-- Заглушка, если чат не открыт -->
             <div id="noActiveChatPlaceholder" class="empty-chat-placeholder" style="display: none;">
                 <span>NO ACTIVE CHAT</span>
             </div>
@@ -1304,7 +1353,7 @@
     </div>
 </div>
 
-<!-- Modal Call Window Overlay (Incoming Call) -->
+<!-- Incoming Call Overlay -->
 <div class="call-modal-overlay" id="incomingCallModalOverlay">
     <div class="call-modal-content">
         <div class="call-avatar-container">
@@ -1312,14 +1361,14 @@
         </div>
         <div class="call-info">
             <div class="call-peer-name" id="incomingCallPeerName">Friend</div>
-            <div class="call-status-text">Incoming Call...</div>
+            <div class="call-status-text" id="incomingCallStatusText">Incoming call...</div>
         </div>
         <div class="call-controls">
-            <button class="call-ctrl-btn end-call" id="rejectCallBtn" title="Decline">
-                <img src="image/close.png" alt="Cancel" draggable="false">
+            <button class="call-ctrl-btn end-call" id="rejectCallBtn" title="Reject">
+                <img src="image/close.png" alt="Reject" draggable="false">
             </button>
             <button class="call-ctrl-btn accept-call" id="acceptCallBtn" title="Accept">
-                <img src="image/phone.png" alt="Phone" draggable="false">
+                <img src="image/phone.png" alt="Accept" draggable="false">
             </button>
         </div>
     </div>
@@ -1327,18 +1376,26 @@
 
 <!-- Active Call Window Overlay -->
 <div class="call-modal-overlay" id="callModalOverlay">
-    <div class="call-modal-content">
-        <div class="call-avatar-container">
+    <div class="call-modal-content" id="activeCallContent">
+        <div class="video-container" id="videoContainer">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" autoplay playsinline muted></video>
+        </div>
+
+        <div class="call-avatar-container" id="callAvatarContainer">
             <img id="callPeerAvatar" src="image/ava1.png" alt="avatar">
         </div>
+
         <div class="call-info">
             <div class="call-peer-name" id="callPeerName">Friend</div>
             <div class="call-status-text" id="callStatusText">Calling...</div>
         </div>
+
         <div class="call-controls">
             <button class="call-ctrl-btn" id="muteMicBtn" onclick="toggleCallMute()" title="Mute Mic">
                 <img id="muteMicImg" src="image/mic.png" alt="Mic" draggable="false">
             </button>
+
             <button class="call-ctrl-btn end-call" onclick="endAudioCall()" title="End Call">
                 <img src="image/close.png" alt="End" draggable="false">
             </button>
@@ -1416,9 +1473,10 @@
     let activeReactionPicker = null;
 
     let currentCall = null;
-    let localAudioStream = null;
+    let localMediaStream = null;
     let isMicMuted = false;
-    
+    let isVideoCall = false; // true = відеодзвінок, false = аудіодзвінок
+
     const homeScreen = document.getElementById('homeScreen');
     const chatScreen = document.getElementById('chatScreen');
     const homeNickSpan = document.getElementById('homeNick');
@@ -1431,7 +1489,6 @@
     const notConnectedPlaceholder = document.getElementById('notConnectedPlaceholder');
     const scrollDownBtn = document.getElementById('scrollDownBtn');
     
-    // Проверка устройства при запуске
     const isDesktop = window.innerWidth > 800;
 
     let lastDateLabel = "";
@@ -1602,155 +1659,144 @@
         }, 100);
     }
     
-// Функция для превращения текста ссылок в кликабельные HTML-ссылки
-function linkify(inputText) {
-    if (!inputText) return '';
-    // Экранируем HTML, чтобы избежать XSS
-    let escaped = escapeHtml(inputText);
-    
-    // Регулярное выражение для поиска URL
-    let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-    let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
-    
-    // Также обрабатываем домены без http:// типа google.com
-    let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-    let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
-    
-    return finalResult;
-}
+    function linkify(inputText) {
+        if (!inputText) return '';
+        let escaped = escapeHtml(inputText);
+        let replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+        let replacedText = escaped.replace(replacePattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$1</a>');
+        let replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+        let finalResult = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer" style="color: #61afef; text-decoration: underline;">$2</a>');
+        return finalResult;
+    }
 
-function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
-    const container = chatMessagesDiv;
-    if (!container) return;
-    
-    const now = savedTime ? new Date(savedTime) : new Date();
-    const dateOptions = { day: 'numeric', month: 'long' };
-    const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
-    if (currentDateLabel !== lastDateLabel) {
-        const dateDiv = document.createElement('div'); 
-        dateDiv.className = 'date-divider'; 
-        dateDiv.innerText = currentDateLabel;
-        container.appendChild(dateDiv);
-        lastDateLabel = currentDateLabel;
-    }
-    
-    const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
-    const msgDiv = document.createElement('div'); 
-    msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
-    msgDiv.setAttribute('data-msg-id', msgId);
-    
-    const content = document.createElement('div');
-    if (type === 'text') {
-        // Используем linkify вместо обычного escapeHtml/innerText, чтобы ссылки стали кликабельными
-        content.innerHTML = linkify(data);
-    }
-    else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
-    else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
-    msgDiv.appendChild(content);
-    
-    const timeDiv = document.createElement('div'); 
-    timeDiv.className = 'msg-time';
-    timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    msgDiv.appendChild(timeDiv);
-    
-    container.appendChild(msgDiv);
-    
-    const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
-    
-    if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
-    
-    const isMyMessage = (side === 'my');
-    msgDiv.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showReactionPicker(msgDiv, msgId, isMyMessage);
-        return false;
-    });
-    let lastTap = 0;
-    msgDiv.addEventListener('touchstart', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 300 && tapLength > 0) {
+    function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
+        const container = chatMessagesDiv;
+        if (!container) return;
+        
+        const now = savedTime ? new Date(savedTime) : new Date();
+        const dateOptions = { day: 'numeric', month: 'long' };
+        const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
+        if (currentDateLabel !== lastDateLabel) {
+            const dateDiv = document.createElement('div'); 
+            dateDiv.className = 'date-divider'; 
+            dateDiv.innerText = currentDateLabel;
+            container.appendChild(dateDiv);
+            lastDateLabel = currentDateLabel;
+        }
+        
+        const msgId = existingMsgId || `msg_${Date.now()}_${Math.random()}`;
+        const msgDiv = document.createElement('div'); 
+        msgDiv.className = `msg ${side === 'my' ? 'my' : 'other'}`;
+        msgDiv.setAttribute('data-msg-id', msgId);
+        
+        const content = document.createElement('div');
+        if (type === 'text') {
+            content.innerHTML = linkify(data);
+        }
+        else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
+        else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
+        msgDiv.appendChild(content);
+        
+        const timeDiv = document.createElement('div'); 
+        timeDiv.className = 'msg-time';
+        timeDiv.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        msgDiv.appendChild(timeDiv);
+        
+        container.appendChild(msgDiv);
+        
+        const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        if (side === 'my' || wasNearBottom) container.scrollTop = container.scrollHeight;
+        
+        if (!reactionsStore.has(msgId)) reactionsStore.set(msgId, { my: null, peer: null });
+        
+        const isMyMessage = (side === 'my');
+        msgDiv.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             showReactionPicker(msgDiv, msgId, isMyMessage);
+            return false;
+        });
+        let lastTap = 0;
+        msgDiv.addEventListener('touchstart', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                showReactionPicker(msgDiv, msgId, isMyMessage);
+            }
+            lastTap = currentTime;
+        });
+        
+        if (side === 'other' && !savedTime) { 
+            const sound = document.getElementById('msgSound'); 
+            if(sound) sound.play().catch(e=>{}); 
         }
-        lastTap = currentTime;
-    });
-    
-    if (side === 'other' && !savedTime) { 
-        const sound = document.getElementById('msgSound'); 
-        if(sound) sound.play().catch(e=>{}); 
+        
+        setTimeout(() => checkScrollPosition(), 50);
     }
     
-    setTimeout(() => checkScrollPosition(), 50);
-}
-    
-function showReactionPicker(msgElement, msgId, isMyMessage) {
-    if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
-    const picker = document.createElement('div');
-    picker.className = 'reaction-picker';
-    
-    // Указываем пути к вашим картинкам вместо эмодзи
-    const reactions = [
-        'image/emo1.png', 
-        'image/emo2.png', 
-        'image/emo3.png', 
-        'image/emo4.png', 
-        'image/emo5.png', 
-        'image/emo6.png'
-    ];
-    
-    reactions.forEach(imgPath => {
-        const span = document.createElement('span');
-        span.className = 'reaction-emoji';
+    function showReactionPicker(msgElement, msgId, isMyMessage) {
+        if (activeReactionPicker) { activeReactionPicker.remove(); activeReactionPicker = null; }
+        const picker = document.createElement('div');
+        picker.className = 'reaction-picker';
         
-        // Внутрь пикера кладем картинку
-        const img = document.createElement('img');
-        img.src = imgPath;
-        img.draggable = false;
-        span.appendChild(img);
+        const reactions = [
+            'image/emo1.png', 
+            'image/emo2.png', 
+            'image/emo3.png', 
+            'image/emo4.png', 
+            'image/emo5.png', 
+            'image/emo6.png'
+        ];
         
-        span.onclick = (e) => {
-            e.stopPropagation();
-            sendReactionToggle(msgId, imgPath); // Передаем путь к картинке как ID реакции
-            picker.remove();
-            activeReactionPicker = null;
+        reactions.forEach(imgPath => {
+            const span = document.createElement('span');
+            span.className = 'reaction-emoji';
+            const img = document.createElement('img');
+            img.src = imgPath;
+            img.draggable = false;
+            span.appendChild(img);
+            
+            span.onclick = (e) => {
+                e.stopPropagation();
+                sendReactionToggle(msgId, imgPath);
+                picker.remove();
+                activeReactionPicker = null;
+            };
+            picker.appendChild(span);
+        });
+        
+        const rect = msgElement.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        let top = rect.top - 50;
+        if (top < 10) top = rect.bottom + 10;
+        if (top + 60 > viewportHeight) top = viewportHeight - 70;
+        if (top < 0) top = 5;
+        
+        let left;
+        if (isMyMessage) {
+            left = rect.left - 230 - 8;
+            if (left < 5) left = rect.right + 2;
+        } else {
+            left = rect.right - 28;
+            if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
+        }
+        if (left < 5) left = 5;
+        if (left + 230 > viewportWidth) left = viewportWidth - 235;
+        
+        picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
+        document.body.appendChild(picker);
+        activeReactionPicker = picker;
+        
+        const closePicker = (e) => {
+            if (picker && !picker.contains(e.target)) {
+                picker.remove();
+                activeReactionPicker = null;
+                document.removeEventListener('click', closePicker);
+            }
         };
-        picker.appendChild(span);
-    });
-    
-    const rect = msgElement.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    let top = rect.top - 50;
-    if (top < 10) top = rect.bottom + 10;
-    if (top + 60 > viewportHeight) top = viewportHeight - 70;
-    if (top < 0) top = 5;
-    
-    let left;
-    if (isMyMessage) {
-        left = rect.left - 230 - 8; // Немного увеличили ширину под картинки
-        if (left < 5) left = rect.right + 2;
-    } else {
-        left = rect.right - 28;
-        if (left + 230 > viewportWidth) left = rect.left - 230 - 2;
+        setTimeout(() => document.addEventListener('click', closePicker), 10);
     }
-    if (left < 5) left = 5;
-    if (left + 230 > viewportWidth) left = viewportWidth - 235;
-    
-    picker.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:1000;`;
-    document.body.appendChild(picker);
-    activeReactionPicker = picker;
-    
-    const closePicker = (e) => {
-        if (picker && !picker.contains(e.target)) {
-            picker.remove();
-            activeReactionPicker = null;
-            document.removeEventListener('click', closePicker);
-        }
-    };
-    setTimeout(() => document.addEventListener('click', closePicker), 10);
-}
     
     function sendReactionToggle(msgId, emoji) {
         if (!currentConn || !currentConn.open) return;
@@ -1768,51 +1814,47 @@ function showReactionPicker(msgElement, msgId, isMyMessage) {
         updateReactionsUI(msgId);
     }
     
-function updateReactionsUI(msgId) {
-    const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
-    if (!targetMsg) return;
-    let reactionsContainer = targetMsg.querySelector('.reactions-container');
-    if (reactionsContainer) reactionsContainer.remove();
-    
-    const store = reactionsStore.get(msgId);
-    if (!store) return;
-    
-    reactionsContainer = document.createElement('div');
-    reactionsContainer.className = 'reactions-container';
-    
-    const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
+    function updateReactionsUI(msgId) {
+        const targetMsg = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+        if (!targetMsg) return;
+        let reactionsContainer = targetMsg.querySelector('.reactions-container');
+        if (reactionsContainer) reactionsContainer.remove();
+        
+        const store = reactionsStore.get(msgId);
+        if (!store) return;
+        
+        reactionsContainer = document.createElement('div');
+        reactionsContainer.className = 'reactions-container';
+        
+        const createImgHTML = (path) => `<img src="${path}" draggable="false">`;
 
-    if (store.my && store.peer && store.my === store.peer) {
-        const badge = document.createElement('div');
-        badge.className = 'reaction-badge my-reaction';
-        badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
-        badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
-        reactionsContainer.appendChild(badge);
-    } else {
-        if (store.my) {
+        if (store.my && store.peer && store.my === store.peer) {
             const badge = document.createElement('div');
             badge.className = 'reaction-badge my-reaction';
-            badge.innerHTML = createImgHTML(store.my);
+            badge.innerHTML = `${createImgHTML(store.my)} <span class="reaction-count">2</span>`;
             badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
             reactionsContainer.appendChild(badge);
+        } else {
+            if (store.my) {
+                const badge = document.createElement('div');
+                badge.className = 'reaction-badge my-reaction';
+                badge.innerHTML = createImgHTML(store.my);
+                badge.onclick = (e) => { e.stopPropagation(); sendReactionToggle(msgId, store.my); };
+                reactionsContainer.appendChild(badge);
+            }
+            if (store.peer) {
+                const badge = document.createElement('div');
+                badge.className = 'reaction-badge';
+                badge.innerHTML = createImgHTML(store.peer);
+                badge.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    sendReactionToggle(msgId, store.peer); 
+                };
+                reactionsContainer.appendChild(badge);
+            }
         }
-        if (store.peer) {
-            const badge = document.createElement('div');
-            badge.className = 'reaction-badge'; // Можно добавить класс, если нужно визуально отличать
-            badge.innerHTML = createImgHTML(store.peer);
-            
-            // ИСПРАВЛЕНИЕ ЗДЕСЬ: делаем кликабельной реакцию собеседника, 
-            // чтобы при нажатии на нее отправлялась точно такая же ваша реакция
-            badge.onclick = (e) => { 
-                e.stopPropagation(); 
-                sendReactionToggle(msgId, store.peer); 
-            };
-            
-            reactionsContainer.appendChild(badge);
-        }
+        if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
-    if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
-}
     
     function checkActiveChatState() {
         const wrapper = document.getElementById('activeChatWrapper');
@@ -1820,7 +1862,6 @@ function updateReactionsUI(msgId) {
         if (!wrapper || !placeholder) return;
 
         if (isDesktop) {
-            // На ПК чат всегда отображается справа: либо активный контент, либо "NO ACTIVE CHAT"
             if (currentChatPeer) {
                 wrapper.style.display = 'flex';
                 placeholder.style.display = 'none';
@@ -1829,7 +1870,6 @@ function updateReactionsUI(msgId) {
                 placeholder.style.display = 'flex';
             }
         } else {
-            // На мобильных/планшетах используется старое поведение с экранами
             placeholder.style.display = 'none';
             wrapper.style.display = 'flex';
         }
@@ -2036,8 +2076,7 @@ function updateReactionsUI(msgId) {
         };
     }
     
-function connectToPeer() {
-        // Check PeerJS connection status
+    function connectToPeer() {
         if (!peer || peer.destroyed) { 
             showAlert("Connection error: PeerJS is not initialized"); 
             return; 
@@ -2045,7 +2084,6 @@ function connectToPeer() {
         
         const friendNick = document.getElementById('peer-nick-input').value.trim();
         
-        // Check length (at least 3 characters) and allowed characters (A-z, 0-9, _)
         if (!friendNick || friendNick.length < 3) { 
             showAlert("Nickname must be at least 3 characters long"); 
             return; 
@@ -2176,23 +2214,52 @@ function connectToPeer() {
         } catch(err) { showAlert("Mic access denied"); }
     }
 
+    // ====== АУДІОДЗВІНОК ======
+
     async function startAudioCall() {
         if (!currentChatPeer) return;
         const chat = activeChats.get(currentChatPeer);
         if (!chat) return;
 
         try {
-            localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            localMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            isVideoCall = false;
             setupCallUI(chat, "Calling...");
             playDialingSound();
             
-            const call = peer.call(currentChatPeer, localAudioStream);
-            handleCallEvents(call);
+            const call = peer.call(currentChatPeer, localMediaStream, { metadata: { video: false } });
+            handleCallEvents(call, false);
         } catch (err) {
             console.error("Call error:", err);
             showAlert("Could not access microphone for call");
         }
     }
+
+    // ====== ВІДЕОДЗВІНОК ======
+
+    async function startVideoCall() {
+        if (!currentChatPeer) return;
+        const chat = activeChats.get(currentChatPeer);
+        if (!chat) return;
+
+        try {
+            localMediaStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: true, 
+                video: { width: 640, height: 480, facingMode: 'user' } 
+            });
+            isVideoCall = true;
+            setupCallUI(chat, "Calling...");
+            playDialingSound();
+            
+            const call = peer.call(currentChatPeer, localMediaStream, { metadata: { video: true } });
+            handleCallEvents(call, true);
+        } catch (err) {
+            console.error("Video call error:", err);
+            showAlert("Could not access microphone/camera for video call");
+        }
+    }
+
+    // ====== ВХІДНИЙ ДЗВІНОК ======
 
     function handleIncomingCall(incomingCall) {
         const callerId = incomingCall.peer;
@@ -2212,9 +2279,11 @@ function connectToPeer() {
         }
 
         const chat = activeChats.get(callerId);
+        const isVideoIncoming = incomingCall.metadata && incomingCall.metadata.video === true;
         
         document.getElementById('incomingCallPeerAvatar').src = chat.avatar || 'image/ava1.png';
         document.getElementById('incomingCallPeerName').innerText = chat.displayName || chat.nick;
+        document.getElementById('incomingCallStatusText').innerText = isVideoIncoming ? "Incoming video call..." : "Incoming call...";
         
         const incomingOverlay = document.getElementById('incomingCallModalOverlay');
         incomingOverlay.classList.add('active');
@@ -2233,34 +2302,69 @@ function connectToPeer() {
             incomingCall.close();
         };
 
-        acceptBtn.onclick = () => {
+        acceptBtn.onclick = async () => {
             stopRingingSound();
             incomingOverlay.classList.remove('active');
-            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
-                localAudioStream = stream;
+            try {
+                if (isVideoIncoming) {
+                    localMediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true, 
+                        video: { width: 640, height: 480, facingMode: 'user' } 
+                    });
+                    isVideoCall = true;
+                } else {
+                    localMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    isVideoCall = false;
+                }
                 setupCallUI(chat, "Connected");
-                incomingCall.answer(localAudioStream);
-                handleCallEvents(incomingCall);
-            }).catch(e => {
-                showAlert("Microphone access required for calls");
+                incomingCall.answer(localMediaStream);
+                handleCallEvents(incomingCall, isVideoCall);
+            } catch (e) {
+                showAlert("Microphone/camera access required for calls");
                 incomingCall.close();
-            });
+            }
         };
     }
 
-    function handleCallEvents(call) {
+    // ====== ОБРОБКА ПОДІЙ ДЗВІНКА ======
+
+    function handleCallEvents(call, isVideo) {
         currentCall = call;
         isMicMuted = false;
+        isVideoCall = isVideo;
+
         document.getElementById('muteMicBtn').classList.remove('active-state');
         document.getElementById('muteMicImg').src = "image/mic.png";
+        document.getElementById('callAvatarContainer').style.display = 'flex';
+        document.getElementById('videoContainer').classList.remove('active');
+        document.getElementById('activeCallContent').classList.remove('expanded');
+        document.getElementById('localVideo').srcObject = null;
+        document.getElementById('remoteVideo').srcObject = null;
 
         call.on('stream', (remoteStream) => {
             stopDialingSound();
             stopRingingSound();
             document.getElementById('callStatusText').innerText = "Connected";
+            
+            // Аудіо — завжди
             const remoteAudio = document.getElementById('remoteAudio');
             remoteAudio.srcObject = remoteStream;
             remoteAudio.play().catch(e => console.log(e));
+
+            // Відео — тільки якщо це відеодзвінок
+            if (isVideoCall) {
+                const remoteVideo = document.getElementById('remoteVideo');
+                const localVideo = document.getElementById('localVideo');
+                remoteVideo.srcObject = remoteStream;
+                remoteVideo.play().catch(e => console.log(e));
+                localVideo.srcObject = localMediaStream;
+                localVideo.play().catch(e => console.log(e));
+
+                // Показуємо відеоконтейнер і розширюємо вікно
+                document.getElementById('videoContainer').classList.add('active');
+                document.getElementById('callAvatarContainer').style.display = 'none';
+                document.getElementById('activeCallContent').classList.add('expanded');
+            }
         });
 
         call.on('close', () => {
@@ -2281,9 +2385,9 @@ function connectToPeer() {
     }
 
     function toggleCallMute() {
-        if (!localAudioStream) return;
+        if (!localMediaStream) return;
         isMicMuted = !isMicMuted;
-        localAudioStream.getAudioTracks().forEach(track => {
+        localMediaStream.getAudioTracks().forEach(track => {
             track.enabled = !isMicMuted;
         });
         const muteBtn = document.getElementById('muteMicBtn');
@@ -2308,14 +2412,37 @@ function connectToPeer() {
     function closeCallModal() {
         stopDialingSound();
         stopRingingSound();
-        if (localAudioStream) {
-            localAudioStream.getTracks().forEach(track => track.stop());
-            localAudioStream = null;
+
+        if (localMediaStream) {
+            localMediaStream.getTracks().forEach(track => track.stop());
+            localMediaStream = null;
         }
+
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) localVideo.srcObject = null;
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo) remoteVideo.srcObject = null;
+
+        const videoContainer = document.getElementById('videoContainer');
+        if (videoContainer) videoContainer.classList.remove('active');
+        const avatarContainer = document.getElementById('callAvatarContainer');
+        if (avatarContainer) avatarContainer.style.display = 'flex';
+        const activeCallContent = document.getElementById('activeCallContent');
+        if (activeCallContent) activeCallContent.classList.remove('expanded');
+
+        isMicMuted = false;
+        isVideoCall = false;
+        const muteMicImg = document.getElementById('muteMicImg');
+        if (muteMicImg) muteMicImg.src = "image/mic.png";
+        const muteMicBtn = document.getElementById('muteMicBtn');
+        if (muteMicBtn) muteMicBtn.classList.remove('active-state');
+
         document.getElementById('callModalOverlay').classList.remove('active');
         document.getElementById('incomingCallModalOverlay').classList.remove('active');
     }
-    
+
+    // ====== МОДАЛКИ ======
+
     function animateModalClose(modalElement, callback) {
         const modalContent = modalElement.querySelector('.modal');
         if (modalContent) {
