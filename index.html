@@ -1156,10 +1156,11 @@
             background: #2a2a2a;
         }
         .call-ctrl-btn.active-state {
-            background: #fff;
+            background: #fff !important;
         }
         .call-ctrl-btn.active-state img {
-            filter: brightness(0);
+            filter: brightness(0) !important;
+            opacity: 1 !important;
         }
 
         /* ====== Video call styles ====== */
@@ -1396,6 +1397,10 @@
                 <img id="muteMicImg" src="image/mic.png" alt="Mic" draggable="false">
             </button>
 
+            <button class="call-ctrl-btn" id="switchCameraBtn" onclick="switchCamera()" title="Switch Camera" style="display:none;">
+                <img src="image/change.png" alt="Switch" draggable="false">
+            </button>
+
             <button class="call-ctrl-btn end-call" onclick="endAudioCall()" title="End Call">
                 <img src="image/close.png" alt="End" draggable="false">
             </button>
@@ -1475,7 +1480,8 @@
     let currentCall = null;
     let localMediaStream = null;
     let isMicMuted = false;
-    let isVideoCall = false; // true = відеодзвінок, false = аудіодзвінок
+    let isVideoCall = false;
+    let currentFacingMode = 'user';
 
     const homeScreen = document.getElementById('homeScreen');
     const chatScreen = document.getElementById('chatScreen');
@@ -2243,9 +2249,10 @@
         if (!chat) return;
 
         try {
+            currentFacingMode = 'user';
             localMediaStream = await navigator.mediaDevices.getUserMedia({ 
                 audio: true, 
-                video: { width: 640, height: 480, facingMode: 'user' } 
+                video: { width: 640, height: 480, facingMode: currentFacingMode } 
             });
             isVideoCall = true;
             setupCallUI(chat, "Calling...");
@@ -2307,9 +2314,10 @@
             incomingOverlay.classList.remove('active');
             try {
                 if (isVideoIncoming) {
+                    currentFacingMode = 'user';
                     localMediaStream = await navigator.mediaDevices.getUserMedia({ 
                         audio: true, 
-                        video: { width: 640, height: 480, facingMode: 'user' } 
+                        video: { width: 640, height: 480, facingMode: currentFacingMode } 
                     });
                     isVideoCall = true;
                 } else {
@@ -2340,18 +2348,17 @@
         document.getElementById('activeCallContent').classList.remove('expanded');
         document.getElementById('localVideo').srcObject = null;
         document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('switchCameraBtn').style.display = 'none';
 
         call.on('stream', (remoteStream) => {
             stopDialingSound();
             stopRingingSound();
             document.getElementById('callStatusText').innerText = "Connected";
             
-            // Аудіо — завжди
             const remoteAudio = document.getElementById('remoteAudio');
             remoteAudio.srcObject = remoteStream;
             remoteAudio.play().catch(e => console.log(e));
 
-            // Відео — тільки якщо це відеодзвінок
             if (isVideoCall) {
                 const remoteVideo = document.getElementById('remoteVideo');
                 const localVideo = document.getElementById('localVideo');
@@ -2360,10 +2367,11 @@
                 localVideo.srcObject = localMediaStream;
                 localVideo.play().catch(e => console.log(e));
 
-                // Показуємо відеоконтейнер і розширюємо вікно
                 document.getElementById('videoContainer').classList.add('active');
                 document.getElementById('callAvatarContainer').style.display = 'none';
                 document.getElementById('activeCallContent').classList.add('expanded');
+
+                document.getElementById('switchCameraBtn').style.display = 'flex';
             }
         });
 
@@ -2401,6 +2409,39 @@
         }
     }
 
+    async function switchCamera() {
+        if (!localMediaStream || !isVideoCall) return;
+        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        try {
+            const oldVideoTrack = localMediaStream.getVideoTracks()[0];
+            if (oldVideoTrack) {
+                oldVideoTrack.stop();
+                localMediaStream.removeTrack(oldVideoTrack);
+            }
+
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: { width: 640, height: 480, facingMode: currentFacingMode }
+            });
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            localMediaStream.addTrack(newVideoTrack);
+
+            const localVideo = document.getElementById('localVideo');
+            localVideo.srcObject = null;
+            localVideo.srcObject = localMediaStream;
+            localVideo.play().catch(e => console.log(e));
+
+            if (currentCall && currentCall.peerConnection) {
+                const sender = currentCall.peerConnection
+                    .getSenders()
+                    .find(s => s.track && s.track.kind === 'video');
+                if (sender) await sender.replaceTrack(newVideoTrack);
+            }
+        } catch (err) {
+            console.error('Switch camera error:', err);
+        }
+    }
+
     function endAudioCall() {
         if (currentCall) {
             currentCall.close();
@@ -2432,10 +2473,15 @@
 
         isMicMuted = false;
         isVideoCall = false;
+        currentFacingMode = 'user';
+
         const muteMicImg = document.getElementById('muteMicImg');
         if (muteMicImg) muteMicImg.src = "image/mic.png";
         const muteMicBtn = document.getElementById('muteMicBtn');
         if (muteMicBtn) muteMicBtn.classList.remove('active-state');
+
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        if (switchCameraBtn) switchCameraBtn.style.display = 'none';
 
         document.getElementById('callModalOverlay').classList.remove('active');
         document.getElementById('incomingCallModalOverlay').classList.remove('active');
