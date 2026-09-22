@@ -1198,8 +1198,6 @@
             border: 2px solid #fff;
             background: #000;
             display: block;
-                transform: scaleX(-1) !important;
-    -webkit-transform: scaleX(-1) !important;
         }
 
         .call-modal-content.expanded {
@@ -2361,20 +2359,29 @@
             remoteAudio.srcObject = remoteStream;
             remoteAudio.play().catch(e => console.log(e));
 
-            if (isVideoCall) {
-                const remoteVideo = document.getElementById('remoteVideo');
-                const localVideo = document.getElementById('localVideo');
-                remoteVideo.srcObject = remoteStream;
-                remoteVideo.play().catch(e => console.log(e));
-                localVideo.srcObject = localMediaStream;
-                localVideo.play().catch(e => console.log(e));
+if (isVideoCall) {
+    const remoteVideo = document.getElementById('remoteVideo');
+    const localVideo = document.getElementById('localVideo');
+    remoteVideo.srcObject = remoteStream;
+    remoteVideo.play().catch(e => console.log(e));
+    localVideo.srcObject = localMediaStream;
+    localVideo.play().catch(e => console.log(e));
 
-                document.getElementById('videoContainer').classList.add('active');
-                document.getElementById('callAvatarContainer').style.display = 'none';
-                document.getElementById('activeCallContent').classList.add('expanded');
+    // Дзеркалення ТІЛЬКИ для фронтальної камери
+    if (currentFacingMode === 'user') {
+        localVideo.style.transform = 'scaleX(-1)';
+        localVideo.style.webkitTransform = 'scaleX(-1)';
+    } else {
+        localVideo.style.transform = 'none';
+        localVideo.style.webkitTransform = 'none';
+    }
 
-                document.getElementById('switchCameraBtn').style.display = 'flex';
-            }
+    document.getElementById('videoContainer').classList.add('active');
+    document.getElementById('callAvatarContainer').style.display = 'none';
+    document.getElementById('activeCallContent').classList.add('expanded');
+
+    document.getElementById('switchCameraBtn').style.display = 'flex';
+}
         });
 
         call.on('close', () => {
@@ -2411,38 +2418,47 @@
         }
     }
 
-    async function switchCamera() {
-        if (!localMediaStream || !isVideoCall) return;
-        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-        try {
-            const oldVideoTrack = localMediaStream.getVideoTracks()[0];
-            if (oldVideoTrack) {
-                oldVideoTrack.stop();
-                localMediaStream.removeTrack(oldVideoTrack);
-            }
-
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: { width: 640, height: 480, facingMode: currentFacingMode }
-            });
-            const newVideoTrack = newStream.getVideoTracks()[0];
-            localMediaStream.addTrack(newVideoTrack);
-
-            const localVideo = document.getElementById('localVideo');
-            localVideo.srcObject = null;
-            localVideo.srcObject = localMediaStream;
-            localVideo.play().catch(e => console.log(e));
-
-            if (currentCall && currentCall.peerConnection) {
-                const sender = currentCall.peerConnection
-                    .getSenders()
-                    .find(s => s.track && s.track.kind === 'video');
-                if (sender) await sender.replaceTrack(newVideoTrack);
-            }
-        } catch (err) {
-            console.error('Switch camera error:', err);
+async function switchCamera() {
+    if (!localMediaStream || !isVideoCall) return;
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    try {
+        const oldVideoTrack = localMediaStream.getVideoTracks()[0];
+        if (oldVideoTrack) {
+            oldVideoTrack.stop();
+            localMediaStream.removeTrack(oldVideoTrack);
         }
+
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: { width: 640, height: 480, facingMode: currentFacingMode }
+        });
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        localMediaStream.addTrack(newVideoTrack);
+
+        const localVideo = document.getElementById('localVideo');
+        localVideo.srcObject = null;
+        localVideo.srcObject = localMediaStream;
+        localVideo.play().catch(e => console.log(e));
+
+        // Дзеркалення ТІЛЬКИ для фронтальної камери
+        if (currentFacingMode === 'user') {
+            localVideo.style.transform = 'scaleX(-1)';
+            localVideo.style.webkitTransform = 'scaleX(-1)';
+        } else {
+            localVideo.style.transform = 'none';
+            localVideo.style.webkitTransform = 'none';
+        }
+
+        if (currentCall && currentCall.peerConnection) {
+            const sender = currentCall.peerConnection
+                .getSenders()
+                .find(s => s.track && s.track.kind === 'video');
+            if (sender) await sender.replaceTrack(newVideoTrack);
+        }
+    } catch (err) {
+        console.error('Switch camera error:', err);
     }
+}
 
     function endAudioCall() {
         if (currentCall) {
