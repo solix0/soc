@@ -452,6 +452,21 @@
         .peer-info-avatar { width: 36px; height: 36px; border-radius: 50%; background: #2a2a2a; overflow: hidden; position: relative; }
         .peer-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .peer-info-nick { font-weight: 600; font-size: 0.95rem; color: #eee; }
+
+                #realNickDisplay {
+    font-size: 0.85rem;
+    color: #ffffff;
+    background: #222;
+    border: 1px solid #3a3a3a;
+    border-radius: 40px;
+    padding: 8px 14px;
+    margin-top: 10px;
+    margin-bottom: 10px !important;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    text-align: center;
+}
         
         .call-btn-header {
             background: #1a1a1a;
@@ -1482,7 +1497,7 @@
 <div id="modal-overlay" class="modal-overlay"><div class="modal"><div id="modal-text"></div><div class="modal-btns" id="modal-actions"></div></div></div>
 <div id="registrationModal" class="modal-overlay">
     <div class="modal">
-        <div class="welcome-title">SOC.</div>
+        <div class="welcome-title">Smiya</div>
         <div class="welcome-sub">WELCOME!</div>
         <input type="text" id="regNickInput" class="nick-input-modal" placeholder="3-20 characters (A-z, 0-9, _)" maxlength="20">
         <button class="reg-primary-btn" id="regSubmitBtn">REGISTRATION</button>
@@ -1491,7 +1506,6 @@
 </div>
 <div id="profileModal" class="modal-overlay">
     <div class="modal">
-        <div style="font-weight:600; margin-bottom:8px;">Edit Profile</div>
         <div class="modal-avatar-container" id="modalAvatarClickArea">
             <div class="avatar-large" style="width:80px; height:80px; margin:0;"><img id="modalAvatarImg"></div>
             <div class="modal-edit-icon">✎</div>
@@ -1520,11 +1534,9 @@
 <div id="peerProfileModal" class="modal-overlay">
     <div class="modal">
         <div class="avatar-large" style="margin:0 auto 15px;"><img id="peerModalAvatar"></div>
-        <input type="text" id="editPeerDisplayName" class="nick-input-modal" 
-               placeholder="Display name" 
-               style="margin:5px 0 0 0; text-align:center;">
-        <div style="font-size:0.85rem; color:#b9b9b9; margin-top:10px; margin-bottom:20px;" id="realNickDisplay"></div>
-        <div class="flex-btns" style="margin-top:5px;">
+        <input type="text" id="editPeerDisplayName" class="nick-input-modal" placeholder="Display name">
+        <div style="font-size:0.85rem; color:#b9b9b9; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:40px; padding:10px 14px; margin:10px 0;" id="realNickDisplay"></div>
+        <div class="flex-btns" style="margin-top:12px;">
             <button class="modal-btn" id="cancelPeerEdit" style="background:#1f1f1f;">CANCEL</button>
             <button class="modal-btn" id="savePeerDisplayNameBtn" style="background:#1f1f1f;">SAVE</button>
         </div>
