@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>SOC</title>
+    <title>Smiya</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * {
@@ -56,39 +56,48 @@
             width: 100%;
             text-align: center;
         }
-        .preloader-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            animation: subtlePulse 1.8s infinite ease;
-            margin-bottom: 8px;
-        }
-        @keyframes subtlePulse {
-            0% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
+
         .loader-line-wrapper {
+            position: relative;
             width: 80%;
             max-width: 280px;
             height: 4px;
             background: #1a1a1a;
             border-radius: 4px;
-            overflow: hidden;
             margin: 0 auto;
+            overflow: visible;
         }
+
         .loader-line {
-            width: 100%;
+            width: 0%;
             height: 100%;
             background: linear-gradient(90deg, #e9e9e9, #bbbbbb);
+            border-radius: 4px;
             animation: loadingProgress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
+
+        .loader-head {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: headProgress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));
+        }
+
         @keyframes loadingProgress {
-            0% { width: 0%; }
+            0%   { width: 0%; }
             100% { width: 100%; }
         }
+        @keyframes headProgress {
+            0%   { left: 0%; }
+            100% { left: 100%; }
+        }
+
         .preloader-sub {
             font-size: 0.7rem;
             color: #6a6a6a;
@@ -174,7 +183,7 @@
         .home-header h1 {
             font-size: 1.35rem;
             font-weight: 600;
-            background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 100%);
+            background-color: #ffffff;
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
@@ -743,33 +752,33 @@
         }
         .modal-btn:first-child { background: #1f1f1f; color: #ccc; }
         .modal-btn:last-child { background: #222; color: #ccc; }
-        .nick-input-modal {
-            background: #1a1a1a;
-            border: 1px solid #3a3a3a;
-            padding: 10px;
-            border-radius: 40px;
-            color: white;
-            width: 100%;
-            margin: 15px 0;
-            font-size: 1rem;
-            text-align: center;
-            outline: none;
-            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
-        }
+.nick-input-modal {
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    padding: 10px;
+    border-radius: 40px;
+    color: white;
+    width: 100%;
+    margin: 0;                /* було 1px 0 */
+    font-size: 1rem;
+    text-align: center;
+    outline: none;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
         .nick-input-modal:hover {
             transform: none;
             background: #222;
             color: #ffffff;
         }
         .status-select {
-            width: 100%;
+            flex: 1;
+            min-width: 0;
             padding: 12px;
             background: #1a1a1a;
             border: 1px solid #3a3a3a;
             border-radius: 40px;
             color: white;
             font-size: 0.9rem;
-            margin: 15px 0;
             cursor: pointer;
             transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
         }
@@ -778,7 +787,64 @@
             background: #222;
             color: #ffffff;
         }
-        .flex-btns { display: flex; gap: 10px; margin-top: 12px; }
+
+        /* Обгортка: селект зліва + кругла кнопка Mute Sound справа */
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;           /* було 15px 0 15px 0 */
+}
+
+        /* Кругла кнопка Mute Sound */
+        .mute-sound-btn {
+            width: 46px !important;
+            height: 46px !important;
+            min-width: 46px !important;
+            min-height: 46px !important;
+            max-width: 46px !important;
+            max-height: 46px !important;
+            border-radius: 50% !important;
+            border: 1px solid #3a3a3a;
+            background: #1a1a1a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0;
+            transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+        }
+        .mute-sound-btn:hover {
+            transform: none;
+            background: #2a2a2a;
+        }
+        .mute-sound-btn img {
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            opacity: 0.85;
+            display: block;
+            margin: auto;
+        }
+        .mute-sound-btn.muted {
+            background: #ffffff;
+        }
+        .mute-sound-btn.muted img {
+            filter: brightness(0) !important;
+            opacity: 1 !important;
+        }
+
+        .flex-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;         /* було 0 */
+}
         .modal-avatar-container {
             position: relative;
             display: inline-block;
@@ -1211,7 +1277,6 @@
             display: none;
         }
 
-        /* Стилі для картинок реакцій */
         .reaction-emoji img, 
         .reaction-badge img {
             width: 18px;
@@ -1267,7 +1332,7 @@
     </style>
 </head>
 <body>
-<!-- Звуки вызова и сообщений -->
+<!-- Sound -->
 <audio id="dialingSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" loop preload="auto"></audio>
 <audio id="ringingSound" src="https://assets.mixkit.co/active_storage/sfx/2865/2865-preview.mp3" loop preload="auto"></audio>
 <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" preload="auto"></audio>
@@ -1275,8 +1340,10 @@
 
 <div id="preloader" class="preloader">
     <div class="preloader-content">
-        <div class="preloader-title">SOC</div>
-        <div class="loader-line-wrapper"><div class="loader-line"></div></div>
+        <div class="loader-line-wrapper">
+            <div class="loader-line"></div>
+            <img src="image/loader.png" alt="" class="loader-head" draggable="false">
+        </div>
         <div class="preloader-sub">ANONYMOUS MESSENGER FROM END TO END</div>
     </div>
 </div>
@@ -1285,7 +1352,7 @@
     <div class="app" id="mainApp">
         <div class="home-screen" id="homeScreen">
             <div class="home-header">
-                <h1>SOC</h1>
+                <h1>Smiya</h1>
                 <span id="status">OFFLINE</span>
             </div>
 
@@ -1430,14 +1497,19 @@
             <div class="modal-edit-icon">✎</div>
         </div>
         <input type="text" id="modalNickInput" class="nick-input-modal" placeholder="Nickname (3-20 chars: a-z, 0-9, _)">
-        <select id="modalStatusSelect" class="status-select">
-            <option value="online">online</option>
-            <option value="away">away</option>
-            <option value="do not disturb">do not disturb</option>
-            <option value="offline">offline</option>
-            <option value="in game">in game</option>
-            <option value="studying">studying</option>
-        </select>
+        <div class="status-row">
+            <select id="modalStatusSelect" class="status-select">
+                <option value="online">online</option>
+                <option value="away">away</option>
+                <option value="do not disturb">do not disturb</option>
+                <option value="offline">offline</option>
+                <option value="in game">in game</option>
+                <option value="studying">studying</option>
+            </select>
+            <button class="mute-sound-btn" id="muteSoundBtn" title="Mute Sound" onclick="toggleMuteSound()">
+                <img src="image/mutesound.png" alt="Mute" draggable="false">
+            </button>
+        </div>
         <div class="flex-btns">
             <button class="modal-btn" id="cancelProfileBtn" style="background:#1f1f1f;">CANCEL</button>
             <button class="modal-btn" id="saveProfileBtn">SAVE</button>
@@ -1486,6 +1558,10 @@ document.getElementById('ringingSound').volume = 0.3;
     let isVideoCall = false;
     let currentFacingMode = 'user';
 
+    // ====== MUTE SOUND ======
+    let isSoundMuted = localStorage.getItem('soc-muted') === 'true';
+    let tempMuted = isSoundMuted;
+
     // ====== Таймер звонка ======
     let callTimerInterval = null;
     let callStartTime = null;
@@ -1509,6 +1585,7 @@ document.getElementById('ringingSound').volume = 0.3;
     let scrollTimeout = null;
 
     function playDialingSound() {
+        if (isSoundMuted) return;
         const sound = document.getElementById('dialingSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
@@ -1517,12 +1594,45 @@ document.getElementById('ringingSound').volume = 0.3;
         if (sound) { sound.pause(); sound.currentTime = 0; }
     }
     function playRingingSound() {
+        if (isSoundMuted) return;
         const sound = document.getElementById('ringingSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
     function stopRingingSound() {
         const sound = document.getElementById('ringingSound');
         if (sound) { sound.pause(); sound.currentTime = 0; }
+    }
+
+    // ====== MUTE SOUND логіка ======
+    function updateMuteButtonVisual() {
+        const btn = document.getElementById('muteSoundBtn');
+        if (!btn) return;
+        if (tempMuted) btn.classList.add('muted');
+        else btn.classList.remove('muted');
+    }
+
+    function applyMuteState() {
+        const btn = document.getElementById('muteSoundBtn');
+        if (btn) {
+            if (isSoundMuted) btn.classList.add('muted');
+            else btn.classList.remove('muted');
+        }
+        document.querySelectorAll('audio').forEach(a => {
+            if (a.id === 'remoteAudio') return;
+            a.muted = isSoundMuted;
+        });
+    }
+
+    // Клік по кнопці в модалці — лише тимчасове перемикання
+    function toggleMuteSound() {
+        tempMuted = !tempMuted;
+        updateMuteButtonVisual();
+    }
+
+    function playMsgSound() {
+        if (isSoundMuted) return;
+        const sound = document.getElementById('msgSound');
+        if (sound) sound.play().catch(e => {});
     }
     
     function escapeHtml(str) {
@@ -1740,8 +1850,7 @@ document.getElementById('ringingSound').volume = 0.3;
         });
         
         if (side === 'other' && !savedTime) { 
-            const sound = document.getElementById('msgSound'); 
-            if(sound) sound.play().catch(e=>{}); 
+            playMsgSound();
         }
         
         setTimeout(() => checkScrollPosition(), 50);
@@ -1985,8 +2094,7 @@ document.getElementById('ringingSound').volume = 0.3;
                     saveAllChats();
                     if (currentChatPeer === peerId) {
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
-                        const sound = document.getElementById('msgSound');
-                        if(sound) sound.play().catch(e=>{});
+                        playMsgSound();
                     } else {
                         updateChatsListUI();
                     }
@@ -2384,7 +2492,6 @@ document.getElementById('ringingSound').volume = 0.3;
             stopDialingSound();
             stopRingingSound();
             
-            // Запускаем таймер при получении потока (звонок принят)
             startCallTimer();
             
             const remoteAudio = document.getElementById('remoteAudio');
@@ -2399,7 +2506,6 @@ document.getElementById('ringingSound').volume = 0.3;
                 localVideo.srcObject = localMediaStream;
                 localVideo.play().catch(e => console.log(e));
 
-                // Дзеркалення ТІЛЬКИ для фронтальної камери
                 if (currentFacingMode === 'user') {
                     localVideo.style.transform = 'scaleX(-1)';
                     localVideo.style.webkitTransform = 'scaleX(-1)';
@@ -2467,7 +2573,6 @@ document.getElementById('ringingSound').volume = 0.3;
             const newVideoTrack = newStream.getVideoTracks()[0];
             localMediaStream.addTrack(newVideoTrack);
 
-            // Перевіряємо, яка камера насправді активна
             const settings = newVideoTrack.getSettings();
             const actualFacing = settings.facingMode || currentFacingMode;
             currentFacingMode = actualFacing;
@@ -2477,7 +2582,6 @@ document.getElementById('ringingSound').volume = 0.3;
             localVideo.srcObject = localMediaStream;
             localVideo.play().catch(e => console.log(e));
 
-            // Дзеркалення ТІЛЬКИ для фронтальної камери
             if (actualFacing === 'user') {
                 localVideo.style.transform = 'scaleX(-1)';
                 localVideo.style.webkitTransform = 'scaleX(-1)';
@@ -2643,6 +2747,8 @@ document.getElementById('ringingSound').volume = 0.3;
         document.getElementById('modalNickInput').value = myNick;
         document.getElementById('modalAvatarImg').src = myAvatar;
         document.getElementById('modalStatusSelect').value = myStatus;
+        tempMuted = isSoundMuted;          // <-- скидання тимчасового прапорця
+        updateMuteButtonVisual();          // <-- показати актуальний стан
         showModalWithAnimation(document.getElementById('profileModal'));
     }
     
@@ -2784,8 +2890,18 @@ document.getElementById('ringingSound').volume = 0.3;
     
     document.getElementById('mainProfileBtn').addEventListener('click', openProfileModal);
     document.getElementById('modalAvatarClickArea').onclick = (e) => { e.stopPropagation(); openAvatarUploadFromProfile(); };
-    document.getElementById('cancelProfileBtn').onclick = () => { animateModalClose(document.getElementById('profileModal')); };
+
+    document.getElementById('cancelProfileBtn').onclick = () => {
+        tempMuted = isSoundMuted;      // <-- відкат тимчасового прапорця
+        animateModalClose(document.getElementById('profileModal'));
+    };
+
     document.getElementById('saveProfileBtn').onclick = () => {
+        // === застосовуємо mute ===
+        isSoundMuted = tempMuted;
+        localStorage.setItem('soc-muted', isSoundMuted);
+        applyMuteState();
+
         let newNick = document.getElementById('modalNickInput').value.trim();
         let newAvatar = tempAvatar;
         let newStatus = document.getElementById('modalStatusSelect').value;
@@ -2920,6 +3036,7 @@ document.getElementById('ringingSound').volume = 0.3;
     });
     
     checkActiveChatState();
+    applyMuteState();
 
     if(!myNick || !isValidNick(myNick)) {
         showRegistrationModal();
