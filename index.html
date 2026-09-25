@@ -453,20 +453,20 @@
         .peer-info-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .peer-info-nick { font-weight: 600; font-size: 0.95rem; color: #eee; }
 
-                #realNickDisplay {
-    font-size: 0.85rem;
-    color: #ffffff;
-    background: #222;
-    border: 1px solid #3a3a3a;
-    border-radius: 40px;
-    padding: 8px 14px;
-    margin-top: 10px;
-    margin-bottom: 10px !important;
-    cursor: default;
-    user-select: none;
-    -webkit-user-select: none;
-    text-align: center;
-}
+        #realNickDisplay {
+            font-size: 0.85rem;
+            color: #ffffff;
+            background: #222;
+            border: 1px solid #3a3a3a;
+            border-radius: 40px;
+            padding: 8px 14px;
+            margin-top: 10px;
+            margin-bottom: 10px !important;
+            cursor: default;
+            user-select: none;
+            -webkit-user-select: none;
+            text-align: center;
+        }
         
         .call-btn-header {
             background: #1a1a1a;
@@ -774,7 +774,7 @@
     border-radius: 40px;
     color: white;
     width: 100%;
-    margin: 0;                /* було 1px 0 */
+    margin: 0;
     font-size: 1rem;
     text-align: center;
     outline: none;
@@ -803,15 +803,13 @@
             color: #ffffff;
         }
 
-        /* Обгортка: селект зліва + кругла кнопка Mute Sound справа */
 .status-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 10px 0;           /* було 15px 0 15px 0 */
+    margin: 10px 0;
 }
 
-        /* Кругла кнопка Mute Sound */
         .mute-sound-btn {
             width: 46px !important;
             height: 46px !important;
@@ -858,7 +856,7 @@
         .flex-btns {
     display: flex;
     gap: 10px;
-    margin-top: 12px;         /* було 0 */
+    margin-top: 12px;
 }
         .modal-avatar-container {
             position: relative;
@@ -1344,6 +1342,80 @@
             scrollbar-width: thin;
             scrollbar-color: #333 transparent;
         }
+
+        /* ====== NEW: Typing Indicator ====== */
+        .typing-indicator {
+            align-self: flex-start;
+            background: #141414;
+            border: 0.5px solid #2b2b2b;
+            border-radius: 22px;
+            border-bottom-left-radius: 5px;
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            animation: fadeSlide 0.18s ease;
+            max-width: 80px;
+            box-sizing: border-box;
+        }
+        .typing-indicator.visible {
+            display: inline-flex;
+        }
+        .typing-indicator span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #888;
+            display: inline-block;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ====== NEW: Upload Progress ====== */
+        .upload-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+            padding: 4px 0;
+        }
+        .upload-progress-bar-wrapper {
+            width: 100%;
+            height: 6px;
+            background: #2a2a2a;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        .upload-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #888, #ccc);
+            border-radius: 6px;
+            transition: width 0.15s linear;
+        }
+        .upload-progress-text {
+            font-size: 0.7rem;
+            color: #aaa;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        .msg.uploading .upload-progress-bar {
+            background: linear-gradient(90deg, #6a6a6a, #999);
+        }
+        .msg.upload-done .upload-progress {
+            display: none;
+        }
+        .msg.upload-error .upload-progress-bar {
+            background: #c0392b;
+        }
     </style>
 </head>
 <body>
@@ -1542,7 +1614,7 @@
         </div>
     </div>
 </div>
-<input type="file" id="fileInput" hidden accept="image/*" onchange="sendFile(this.files[0])">
+<input type="file" id="fileInput" hidden accept="image/*" onchange="sendFile(this.files[0]); this.value='';">
 
 <script>
     // Устанавливаем громкость звонков на 50%
@@ -1569,6 +1641,12 @@ document.getElementById('ringingSound').volume = 0.3;
     let isMicMuted = false;
     let isVideoCall = false;
     let currentFacingMode = 'user';
+
+    // ====== NEW: TYPING INDICATOR ======
+    let peerIsTyping = false;
+    let myTypingTimeout = null;
+    let typingIndicatorEl = null;
+    let hideTypingTimeout = null;
 
     // ====== MUTE SOUND ======
     let isSoundMuted = localStorage.getItem('soc-muted') === 'true';
@@ -1635,7 +1713,6 @@ document.getElementById('ringingSound').volume = 0.3;
         });
     }
 
-    // Клік по кнопці в модалці — лише тимчасове перемикання
     function toggleMuteSound() {
         tempMuted = !tempMuted;
         updateMuteButtonVisual();
@@ -1784,6 +1861,8 @@ document.getElementById('ringingSound').volume = 0.3;
         chatMessagesDiv.innerHTML = '';
         lastDateLabel = '';
         reactionsStore.clear();
+        // NEW: сбрасываем ссылку на индикатор, т.к. контейнер очищен
+        typingIndicatorEl = null;
         if (chat.history && chat.history.length) {
             chat.history.forEach(item => {
                 addMsgToChat(item.data, item.side, item.type, item.time, item.msgId);
@@ -1989,7 +2068,75 @@ document.getElementById('ringingSound').volume = 0.3;
         }
         if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
-    
+
+    // ====== NEW: TYPING INDICATOR FUNCTIONS ======
+    function getOrCreateTypingIndicator() {
+        if (typingIndicatorEl && typingIndicatorEl.parentNode) return typingIndicatorEl;
+        
+        typingIndicatorEl = document.createElement('div');
+        typingIndicatorEl.className = 'typing-indicator';
+        typingIndicatorEl.innerHTML = '<span></span><span></span><span></span>';
+        typingIndicatorEl.setAttribute('data-typing', 'true');
+        return typingIndicatorEl;
+    }
+
+    function showTypingIndicator() {
+        const container = chatMessagesDiv;
+        if (!container) return;
+        
+        if (hideTypingTimeout) {
+            clearTimeout(hideTypingTimeout);
+            hideTypingTimeout = null;
+        }
+        
+        const indicator = getOrCreateTypingIndicator();
+        const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+        
+        if (!indicator.parentNode) {
+            container.appendChild(indicator);
+        }
+        indicator.classList.add('visible');
+        
+        if (wasNearBottom) {
+            container.scrollTop = container.scrollHeight;
+        }
+        checkScrollPosition();
+    }
+
+    function hideTypingIndicator() {
+        if (!typingIndicatorEl) return;
+        typingIndicatorEl.classList.remove('visible');
+        if (hideTypingTimeout) clearTimeout(hideTypingTimeout);
+        hideTypingTimeout = setTimeout(() => {
+            if (typingIndicatorEl && typingIndicatorEl.parentNode) {
+                typingIndicatorEl.remove();
+            }
+            typingIndicatorEl = null;
+        }, 300);
+    }
+
+    function notifyTyping() {
+        if (!currentConn || !currentConn.open) return;
+        
+        currentConn.send({ type: 'typing', isTyping: true });
+        
+        if (myTypingTimeout) clearTimeout(myTypingTimeout);
+        myTypingTimeout = setTimeout(() => {
+            if (currentConn && currentConn.open) {
+                currentConn.send({ type: 'typing', isTyping: false });
+            }
+        }, 1500);
+    }
+
+    function handlePeerTyping(isTyping) {
+        peerIsTyping = isTyping;
+        if (isTyping) {
+            showTypingIndicator();
+        } else {
+            hideTypingIndicator();
+        }
+    }
+
     function checkActiveChatState() {
         const wrapper = document.getElementById('activeChatWrapper');
         const placeholder = document.getElementById('noActiveChatPlaceholder');
@@ -2027,6 +2174,10 @@ document.getElementById('ringingSound').volume = 0.3;
     
     function switchToHomeMode() {
         isChatOpen = false;
+        // NEW: скрываем индикатор набора и сбрасываем таймер
+        hideTypingIndicator();
+        peerIsTyping = false;
+        if (myTypingTimeout) clearTimeout(myTypingTimeout);
         if (!isDesktop) {
             homeScreen.classList.remove('chat-open');
             chatScreen.classList.remove('chat-visible');
@@ -2105,6 +2256,8 @@ document.getElementById('ringingSound').volume = 0.3;
                     if (chatData.history.length > 50) chatData.history.shift();
                     saveAllChats();
                     if (currentChatPeer === peerId) {
+                        // Перед добавлением сообщения скрываем индикатор набора
+                        hideTypingIndicator();
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
                         playMsgSound();
                     } else {
@@ -2113,6 +2266,11 @@ document.getElementById('ringingSound').volume = 0.3;
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
+            } else if (payload.type === 'typing') {
+                // NEW: обработка "печатает"
+                if (currentChatPeer === peerId) {
+                    handlePeerTyping(!!payload.isTyping);
+                }
             } else if (payload.type === 'peer_closed_chat') {
                 removeChat(peerId);
             } else if (payload.type === 'call_rejected') {
@@ -2133,6 +2291,8 @@ document.getElementById('ringingSound').volume = 0.3;
                 updateChatsListUI();
                 if (currentChatPeer === peerId) updateStatus('OFFLINE', '#aa5555');
             }
+            // NEW: скрываем индикатор при разрыве соединения
+            if (currentChatPeer === peerId) hideTypingIndicator();
         });
     }
     
@@ -2148,6 +2308,10 @@ document.getElementById('ringingSound').volume = 0.3;
     function openChat(peerId) {
         const chat = activeChats.get(peerId);
         if (!chat) return;
+        
+        // NEW: скрываем индикатор набора при переключении
+        hideTypingIndicator();
+        peerIsTyping = false;
         
         currentChatPeer = peerId;
         currentConn = chat.conn;
@@ -2193,6 +2357,10 @@ document.getElementById('ringingSound').volume = 0.3;
                         try { chat.conn.send({ type: 'peer_closed_chat', nick: myNick }); } catch(e) {}
                         chat.conn.close();
                     }
+                    // NEW: очищаем реакции для удаляемого чата
+                    if (chat.history) {
+                        chat.history.forEach(m => reactionsStore.delete(m.msgId));
+                    }
                     activeChats.delete(peerId);
                     saveAllChats();
                     if (currentChatPeer === peerId) {
@@ -2200,6 +2368,7 @@ document.getElementById('ringingSound').volume = 0.3;
                         currentConn = null;
                         chatMessagesDiv.innerHTML = '';
                         lastDateLabel = '';
+                        typingIndicatorEl = null;
                         updateStatus('ONLINE', '#da8f27');
                         switchToHomeMode();
                     }
@@ -2267,6 +2436,9 @@ document.getElementById('ringingSound').volume = 0.3;
         
         if (currentConn && currentConn.open) {
             currentConn.send({ type: 'text', data: text, msgId: msgId });
+            // NEW: сообщаем собеседнику, что закончили печатать
+            currentConn.send({ type: 'typing', isTyping: false });
+            if (myTypingTimeout) clearTimeout(myTypingTimeout);
         }
         
         addMsgToChat(text, 'my', 'text', null, msgId);
@@ -2282,26 +2454,150 @@ document.getElementById('ringingSound').volume = 0.3;
         input.value = '';
     }
     
+    // ====== UPDATED: sendFile с прогресс-баром ======
     function sendFile(file) {
         if (!file) return;
+        
+        // Лимит размера (10 MB)
+        const MAX_FILE_SIZE = 10 * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE) {
+            showAlert("File is too large (max 10 MB)");
+            return;
+        }
+        
+        if (!file.type.startsWith('image/')) {
+            showAlert("Only images are supported");
+            return;
+        }
+        
+        const msgId = `msg_${Date.now()}_${Math.random()}`;
+        
+        // 1. Создаём сообщение с прогресс-баром
+        createUploadingMessage(msgId);
+        
         const reader = new FileReader();
-        reader.onload = (ev) => { 
-            const msgId = `msg_${Date.now()}_${Math.random()}`;
-            if (currentConn && currentConn.open) {
-                currentConn.send({ type: 'image', data: ev.target.result, msgId: msgId });
-            }
-            addMsgToChat(ev.target.result, 'my', 'image', null, msgId);
-            const chat = activeChats.get(currentChatPeer);
-            if (chat) {
-                chat.lastMessage = '✿ Photo';
-                if (!chat.history) chat.history = [];
-                chat.history.push({ data: ev.target.result, side: 'my', type: 'image', time: Date.now(), msgId: msgId });
-                if (chat.history.length > 50) chat.history.shift();
-                saveAllChats();
-                updateChatsListUI();
+        
+        reader.onprogress = (ev) => {
+            if (ev.lengthComputable) {
+                const percent = Math.round((ev.loaded / ev.total) * 100);
+                updateUploadProgress(msgId, percent);
             }
         };
+        
+        reader.onload = (ev) => {
+            updateUploadProgress(msgId, 100);
+            setTimeout(() => {
+                finishUploadMessage(msgId, ev.target.result);
+            }, 200);
+        };
+        
+        reader.onerror = () => {
+            failUploadMessage(msgId, "Read error");
+        };
+        
         reader.readAsDataURL(file);
+    }
+    
+    // ====== NEW: функции прогресс-бара ======
+    function createUploadingMessage(msgId) {
+        const container = chatMessagesDiv;
+        if (!container) return;
+        
+        const now = new Date();
+        const dateOptions = { day: 'numeric', month: 'long' };
+        const currentDateLabel = now.toLocaleDateString('en-US', dateOptions);
+        if (currentDateLabel !== lastDateLabel) {
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'date-divider';
+            dateDiv.innerText = currentDateLabel;
+            container.appendChild(dateDiv);
+            lastDateLabel = currentDateLabel;
+        }
+        
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'msg my uploading';
+        msgDiv.setAttribute('data-msg-id', msgId);
+        msgDiv.setAttribute('data-uploading', 'true');
+        
+        msgDiv.innerHTML = `
+            <div class="upload-progress">
+                <div class="upload-progress-bar-wrapper">
+                    <div class="upload-progress-bar" style="width: 0%;"></div>
+                </div>
+                <div class="upload-progress-text">0%</div>
+            </div>
+            <div class="msg-time">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</div>
+        `;
+        
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function updateUploadProgress(msgId, percent) {
+        const msgDiv = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+        if (!msgDiv) return;
+        const bar = msgDiv.querySelector('.upload-progress-bar');
+        const text = msgDiv.querySelector('.upload-progress-text');
+        if (bar) bar.style.width = percent + '%';
+        if (text) text.innerText = percent + '%';
+    }
+    
+    function finishUploadMessage(msgId, dataUrl) {
+        const msgDiv = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+        if (!msgDiv) return;
+        
+        // Отправляем по P2P
+        if (currentConn && currentConn.open) {
+            try {
+                currentConn.send({ type: 'image', data: dataUrl, msgId: msgId });
+            } catch (e) {
+                failUploadMessage(msgId, "Send error");
+                return;
+            }
+        }
+        
+        // Заменяем прогресс на изображение
+        msgDiv.classList.remove('uploading');
+        msgDiv.classList.add('upload-done');
+        
+        const progressBlock = msgDiv.querySelector('.upload-progress');
+        if (progressBlock) progressBlock.remove();
+        
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        const timeEl = msgDiv.querySelector('.msg-time');
+        msgDiv.insertBefore(img, timeEl);
+        
+        // Сохраняем в историю
+        const chat = activeChats.get(currentChatPeer);
+        if (chat) {
+            chat.lastMessage = '✿ Photo';
+            if (!chat.history) chat.history = [];
+            chat.history.push({
+                data: dataUrl,
+                side: 'my',
+                type: 'image',
+                time: Date.now(),
+                msgId: msgId
+            });
+            if (chat.history.length > 50) chat.history.shift();
+            saveAllChats();
+            updateChatsListUI();
+        }
+        
+        setTimeout(() => checkScrollPosition(), 50);
+    }
+    
+    function failUploadMessage(msgId, reason) {
+        const msgDiv = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
+        if (!msgDiv) return;
+        msgDiv.classList.remove('uploading');
+        msgDiv.classList.add('upload-error');
+        const text = msgDiv.querySelector('.upload-progress-text');
+        if (text) text.innerText = "Failed: " + (reason || "unknown");
+        setTimeout(() => {
+            if (msgDiv.parentNode) msgDiv.remove();
+        }, 2500);
     }
     
     async function toggleRecord() {
@@ -2759,8 +3055,8 @@ document.getElementById('ringingSound').volume = 0.3;
         document.getElementById('modalNickInput').value = myNick;
         document.getElementById('modalAvatarImg').src = myAvatar;
         document.getElementById('modalStatusSelect').value = myStatus;
-        tempMuted = isSoundMuted;          // <-- скидання тимчасового прапорця
-        updateMuteButtonVisual();          // <-- показати актуальний стан
+        tempMuted = isSoundMuted;
+        updateMuteButtonVisual();
         showModalWithAnimation(document.getElementById('profileModal'));
     }
     
@@ -2904,12 +3200,11 @@ document.getElementById('ringingSound').volume = 0.3;
     document.getElementById('modalAvatarClickArea').onclick = (e) => { e.stopPropagation(); openAvatarUploadFromProfile(); };
 
     document.getElementById('cancelProfileBtn').onclick = () => {
-        tempMuted = isSoundMuted;      // <-- відкат тимчасового прапорця
+        tempMuted = isSoundMuted;
         animateModalClose(document.getElementById('profileModal'));
     };
 
     document.getElementById('saveProfileBtn').onclick = () => {
-        // === застосовуємо mute ===
         isSoundMuted = tempMuted;
         localStorage.setItem('soc-muted', isSoundMuted);
         applyMuteState();
@@ -3011,6 +3306,34 @@ document.getElementById('ringingSound').volume = 0.3;
     document.getElementById('peer-nick-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
     });
+
+    // ====== NEW: отслеживание ввода в поле сообщения ======
+    const msgInputEl = document.getElementById('msgInput');
+    if (msgInputEl) {
+        let lastTypingSent = 0;
+        msgInputEl.addEventListener('input', () => {
+            if (!currentConn || !currentConn.open) return;
+            const now = Date.now();
+            if (now - lastTypingSent > 500) {
+                lastTypingSent = now;
+                notifyTyping();
+            } else {
+                if (myTypingTimeout) clearTimeout(myTypingTimeout);
+                myTypingTimeout = setTimeout(() => {
+                    if (currentConn && currentConn.open) {
+                        currentConn.send({ type: 'typing', isTyping: false });
+                    }
+                }, 1500);
+            }
+        });
+        
+        msgInputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && currentConn && currentConn.open) {
+                currentConn.send({ type: 'typing', isTyping: false });
+                if (myTypingTimeout) clearTimeout(myTypingTimeout);
+            }
+        });
+    }
     
     const dropOverlay = document.getElementById('dropOverlay');
     window.addEventListener('dragover', (e) => { e.preventDefault(); });
@@ -3063,6 +3386,7 @@ document.getElementById('ringingSound').volume = 0.3;
     }, 2000);
     
     window.addEventListener('beforeunload', () => {
+        if (localMediaStream) localMediaStream.getTracks().forEach(t => t.stop());
         if (currentConn && currentConn.open) currentConn.close();
         if (peer) peer.destroy();
     });
