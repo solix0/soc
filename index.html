@@ -65,7 +65,7 @@
             background: #1a1a1a;
             border-radius: 4px;
             margin: 0 auto;
-            overflow: visible;
+            overflow: hidden;
         }
 
         .loader-line {
@@ -76,26 +76,9 @@
             animation: loadingProgress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        .loader-head {
-            position: absolute;
-            top: 50%;
-            left: 0%;
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            animation: headProgress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-            filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));
-        }
-
         @keyframes loadingProgress {
             0%   { width: 0%; }
             100% { width: 100%; }
-        }
-        @keyframes headProgress {
-            0%   { left: 0%; }
-            100% { left: 100%; }
         }
 
         .preloader-sub {
@@ -1429,7 +1412,6 @@
     <div class="preloader-content">
         <div class="loader-line-wrapper">
             <div class="loader-line"></div>
-            <img src="image/loader.png" alt="" class="loader-head" draggable="false">
         </div>
         <div class="preloader-sub">ANONYMOUS MESSENGER FROM END TO END</div>
     </div>
