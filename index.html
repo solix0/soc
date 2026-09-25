@@ -1343,7 +1343,7 @@
             scrollbar-color: #333 transparent;
         }
 
-        /* ====== NEW: Typing Indicator ====== */
+        /* ====== Typing Indicator ====== */
         .typing-indicator {
             align-self: flex-start;
             background: #141414;
@@ -1378,7 +1378,7 @@
             40% { transform: scale(1); opacity: 1; }
         }
 
-        /* ====== NEW: Upload Progress ====== */
+        /* ====== Upload Progress ====== */
         .upload-progress {
             display: flex;
             flex-direction: column;
@@ -1642,15 +1642,19 @@ document.getElementById('ringingSound').volume = 0.3;
     let isVideoCall = false;
     let currentFacingMode = 'user';
 
-    // ====== NEW: TYPING INDICATOR ======
+    // ====== TYPING INDICATOR ======
     let peerIsTyping = false;
     let myTypingTimeout = null;
     let typingIndicatorEl = null;
     let hideTypingTimeout = null;
 
     // ====== MUTE SOUND ======
+    // Sound is muted / off - notifications won't come through
     let isSoundMuted = localStorage.getItem('soc-muted') === 'true';
     let tempMuted = isSoundMuted;
+
+    // ====== NOTIFICATIONS ======
+    let notificationPermission = 'default';
 
     // ====== Таймер звонка ======
     let callTimerInterval = null;
@@ -1723,7 +1727,87 @@ document.getElementById('ringingSound').volume = 0.3;
         const sound = document.getElementById('msgSound');
         if (sound) sound.play().catch(e => {});
     }
-    
+
+    // ====== NOTIFICATIONS: запрос при загрузке ======
+    function checkNotificationPermission() {
+        if (!('Notification' in window)) return 'unsupported';
+        return Notification.permission;
+    }
+
+    // Запрашиваем разрешение при загрузке (как камера/микрофон)
+    async function requestNotificationPermissionOnLoad() {
+        if (!('Notification' in window)) {
+            console.log('Notifications not supported');
+            return false;
+        }
+        if (Notification.permission === 'granted') {
+            notificationPermission = 'granted';
+            return true;
+        }
+        if (Notification.permission === 'denied') {
+            notificationPermission = 'denied';
+            return false;
+        }
+        try {
+            const permission = await Notification.requestPermission();
+            notificationPermission = permission;
+            if (permission === 'granted') {
+                // Тестовое уведомление при первом разрешении
+                try {
+                    new Notification("SOC", {
+                        body: "Notifications enabled!",
+                        icon: "logo.png",
+                        silent: true
+                    });
+                } catch (e) {}
+            }
+            return permission === 'granted';
+        } catch (e) {
+            console.error('Notification permission error:', e);
+            return false;
+        }
+    }
+
+    // Показ уведомления: только если разрешено И звук НЕ выключен
+    function showNotification(title, body, icon) {
+        // Если звук выключен (mute) — уведомления НЕ приходят
+        if (isSoundMuted) return;
+        
+        if (!('Notification' in window)) return;
+        if (Notification.permission !== 'granted') return;
+        if (!document.hidden) return;
+
+        try {
+            const notif = new Notification(title || 'SOC', {
+                body: body || 'New message',
+                icon: icon || 'logo.png',
+                badge: 'logo.png',
+                tag: 'soc-message-' + Date.now(),
+                silent: false,
+                requireInteraction: false
+            });
+
+            notif.onclick = () => {
+                window.focus();
+                notif.close();
+            };
+
+            setTimeout(() => notif.close(), 5000);
+        } catch (e) {
+            console.error('Notification error:', e);
+        }
+    }
+
+    function buildNotificationBody(payload, chat) {
+        if (payload.type === 'text') {
+            const text = payload.data;
+            return text.length > 100 ? text.substring(0, 97) + '...' : text;
+        }
+        if (payload.type === 'image') return '✿ Photo';
+        if (payload.type === 'audio') return '♪ Voice message';
+        return 'New message';
+    }
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -1861,7 +1945,6 @@ document.getElementById('ringingSound').volume = 0.3;
         chatMessagesDiv.innerHTML = '';
         lastDateLabel = '';
         reactionsStore.clear();
-        // NEW: сбрасываем ссылку на индикатор, т.к. контейнер очищен
         typingIndicatorEl = null;
         if (chat.history && chat.history.length) {
             chat.history.forEach(item => {
@@ -2069,7 +2152,7 @@ document.getElementById('ringingSound').volume = 0.3;
         if (reactionsContainer.children.length > 0) targetMsg.appendChild(reactionsContainer);
     }
 
-    // ====== NEW: TYPING INDICATOR FUNCTIONS ======
+    // ====== TYPING INDICATOR FUNCTIONS ======
     function getOrCreateTypingIndicator() {
         if (typingIndicatorEl && typingIndicatorEl.parentNode) return typingIndicatorEl;
         
@@ -2174,7 +2257,6 @@ document.getElementById('ringingSound').volume = 0.3;
     
     function switchToHomeMode() {
         isChatOpen = false;
-        // NEW: скрываем индикатор набора и сбрасываем таймер
         hideTypingIndicator();
         peerIsTyping = false;
         if (myTypingTimeout) clearTimeout(myTypingTimeout);
@@ -2256,18 +2338,26 @@ document.getElementById('ringingSound').volume = 0.3;
                     if (chatData.history.length > 50) chatData.history.shift();
                     saveAllChats();
                     if (currentChatPeer === peerId) {
-                        // Перед добавлением сообщения скрываем индикатор набора
                         hideTypingIndicator();
                         addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
                         playMsgSound();
+                        showNotification(
+                            chatData.displayName || chatData.nick,
+                            buildNotificationBody(payload, chatData),
+                            chatData.avatar
+                        );
                     } else {
                         updateChatsListUI();
+                        showNotification(
+                            chatData.displayName || chatData.nick,
+                            buildNotificationBody(payload, chatData),
+                            chatData.avatar
+                        );
                     }
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
             } else if (payload.type === 'typing') {
-                // NEW: обработка "печатает"
                 if (currentChatPeer === peerId) {
                     handlePeerTyping(!!payload.isTyping);
                 }
@@ -2291,7 +2381,6 @@ document.getElementById('ringingSound').volume = 0.3;
                 updateChatsListUI();
                 if (currentChatPeer === peerId) updateStatus('OFFLINE', '#aa5555');
             }
-            // NEW: скрываем индикатор при разрыве соединения
             if (currentChatPeer === peerId) hideTypingIndicator();
         });
     }
@@ -2309,7 +2398,6 @@ document.getElementById('ringingSound').volume = 0.3;
         const chat = activeChats.get(peerId);
         if (!chat) return;
         
-        // NEW: скрываем индикатор набора при переключении
         hideTypingIndicator();
         peerIsTyping = false;
         
@@ -2357,7 +2445,6 @@ document.getElementById('ringingSound').volume = 0.3;
                         try { chat.conn.send({ type: 'peer_closed_chat', nick: myNick }); } catch(e) {}
                         chat.conn.close();
                     }
-                    // NEW: очищаем реакции для удаляемого чата
                     if (chat.history) {
                         chat.history.forEach(m => reactionsStore.delete(m.msgId));
                     }
@@ -2436,7 +2523,6 @@ document.getElementById('ringingSound').volume = 0.3;
         
         if (currentConn && currentConn.open) {
             currentConn.send({ type: 'text', data: text, msgId: msgId });
-            // NEW: сообщаем собеседнику, что закончили печатать
             currentConn.send({ type: 'typing', isTyping: false });
             if (myTypingTimeout) clearTimeout(myTypingTimeout);
         }
@@ -2454,11 +2540,10 @@ document.getElementById('ringingSound').volume = 0.3;
         input.value = '';
     }
     
-    // ====== UPDATED: sendFile с прогресс-баром ======
+    // ====== sendFile с прогресс-баром ======
     function sendFile(file) {
         if (!file) return;
         
-        // Лимит размера (10 MB)
         const MAX_FILE_SIZE = 10 * 1024 * 1024;
         if (file.size > MAX_FILE_SIZE) {
             showAlert("File is too large (max 10 MB)");
@@ -2471,8 +2556,6 @@ document.getElementById('ringingSound').volume = 0.3;
         }
         
         const msgId = `msg_${Date.now()}_${Math.random()}`;
-        
-        // 1. Создаём сообщение с прогресс-баром
         createUploadingMessage(msgId);
         
         const reader = new FileReader();
@@ -2498,7 +2581,6 @@ document.getElementById('ringingSound').volume = 0.3;
         reader.readAsDataURL(file);
     }
     
-    // ====== NEW: функции прогресс-бара ======
     function createUploadingMessage(msgId) {
         const container = chatMessagesDiv;
         if (!container) return;
@@ -2546,7 +2628,6 @@ document.getElementById('ringingSound').volume = 0.3;
         const msgDiv = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
         if (!msgDiv) return;
         
-        // Отправляем по P2P
         if (currentConn && currentConn.open) {
             try {
                 currentConn.send({ type: 'image', data: dataUrl, msgId: msgId });
@@ -2556,7 +2637,6 @@ document.getElementById('ringingSound').volume = 0.3;
             }
         }
         
-        // Заменяем прогресс на изображение
         msgDiv.classList.remove('uploading');
         msgDiv.classList.add('upload-done');
         
@@ -2568,7 +2648,6 @@ document.getElementById('ringingSound').volume = 0.3;
         const timeEl = msgDiv.querySelector('.msg-time');
         msgDiv.insertBefore(img, timeEl);
         
-        // Сохраняем в историю
         const chat = activeChats.get(currentChatPeer);
         if (chat) {
             chat.lastMessage = '✿ Photo';
@@ -2741,6 +2820,12 @@ document.getElementById('ringingSound').volume = 0.3;
         incomingOverlay.classList.add('active');
         
         playRingingSound();
+
+        showNotification(
+            `📞 ${chat.displayName || chat.nick}`,
+            isVideoIncoming ? 'Incoming video call' : 'Incoming call',
+            chat.avatar
+        );
 
         const rejectBtn = document.getElementById('rejectCallBtn');
         const acceptBtn = document.getElementById('acceptCallBtn');
@@ -3307,7 +3392,7 @@ document.getElementById('ringingSound').volume = 0.3;
         if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
     });
 
-    // ====== NEW: отслеживание ввода в поле сообщения ======
+    // ====== отслеживание ввода в поле сообщения ======
     const msgInputEl = document.getElementById('msgInput');
     if (msgInputEl) {
         let lastTypingSent = 0;
@@ -3372,6 +3457,10 @@ document.getElementById('ringingSound').volume = 0.3;
     
     checkActiveChatState();
     applyMuteState();
+
+    // ====== ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ ПРИ ЗАГРУЗКЕ ======
+    // Как при звонке спрашивается камера/микрофон — так и здесь спрашиваем уведомления
+    requestNotificationPermissionOnLoad();
 
     if(!myNick || !isValidNick(myNick)) {
         showRegistrationModal();
