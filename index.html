@@ -2979,7 +2979,7 @@ document.getElementById('ringingSound').volume = 0.3;
         playRingingSound();
 
         showNotification(
-            `📞 ${chat.displayName || chat.nick}`,
+            `● ${chat.displayName || chat.nick}`,
             isVideoIncoming ? 'Incoming video call' : 'Incoming call',
             chat.avatar
         );
