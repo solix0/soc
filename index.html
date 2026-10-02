@@ -511,7 +511,51 @@
         .my { align-self: flex-end; background: #2c2c2c; color: white; border-bottom-right-radius: 5px; }
         .other { align-self: flex-start; background: #141414; border: 0.5px solid #2b2b2b; border-bottom-left-radius: 5px; color: #efefef; }
         .msg img { max-width: 100%; border-radius: 16px; display: block; margin-top: 5px; }
+        .msg video { max-width: 100%; border-radius: 16px; display: block; margin-top: 5px; }
         audio { height: 38px; width: 180px; max-width: 180px; margin-top: 5px; border-radius: 30px; flex-shrink: 0; }
+
+        .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 10px 14px;
+            margin-top: 6px;
+            color: #e5e5e5 !important;
+            text-decoration: none !important;
+            font-size: 0.85rem;
+            transition: background 0.15s ease;
+            max-width: 100%;
+            word-break: break-all;
+        }
+        .file-attachment:hover {
+            background: rgba(255,255,255,0.12);
+        }
+        .file-attachment .file-icon {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            color: #e5e5e5;
+            line-height: 1;
+        }
+        .file-attachment .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+        .file-attachment .file-name {
+            color: #e5e5e5;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-attachment .file-size {
+            font-size: 0.7rem;
+            color: #888;
+        }
 
         .reactions-container {
             display: flex;
@@ -1545,7 +1589,7 @@
 </div>
 
 <div id="dropOverlay" class="drop-overlay">
-    <div class="drop-hint">Release to send photo</div>
+    <div class="drop-hint">Release to send file</div>
 </div>
 
 <div id="modal-overlay" class="modal-overlay"><div class="modal"><div id="modal-text"></div><div class="modal-btns" id="modal-actions"></div></div></div>
@@ -1596,7 +1640,7 @@
         </div>
     </div>
 </div>
-<input type="file" id="fileInput" hidden accept="image/*" onchange="sendFile(this.files[0]); this.value='';">
+<input type="file" id="fileInput" hidden onchange="sendFile(this.files[0]); this.value='';">
 
 <script>
     // Устанавливаем громкость звонков на 50%
@@ -1785,6 +1829,8 @@ document.getElementById('ringingSound').volume = 0.3;
         }
         if (payload.type === 'image') return '✿ Photo';
         if (payload.type === 'audio') return '♪ Voice message';
+        if (payload.type === 'video') return '▶︎ Video';
+        if (payload.type === 'file') return `⛘ ${payload.fileName || 'File'}`;
         return 'New message';
     }
 
@@ -1796,6 +1842,12 @@ document.getElementById('ringingSound').volume = 0.3;
             if (m === '>') return '&gt;';
             return m;
         });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
     
     function updateStatus(text, colorHint) {
@@ -1936,7 +1988,6 @@ document.getElementById('ringingSound').volume = 0.3;
             notConnectedPlaceholder.style.display = 'flex';
         }
 
-        // Обновляем бейдж в заголовке вкладки
         updateTabTitle();
     }
     
@@ -1949,7 +2000,7 @@ document.getElementById('ringingSound').volume = 0.3;
         typingIndicatorEl = null;
         if (chat.history && chat.history.length) {
             chat.history.forEach(item => {
-                addMsgToChat(item.data, item.side, item.type, item.time, item.msgId);
+                addMsgToChat(item.data, item.side, item.type, item.time, item.msgId, item.fileName, item.fileSize);
             });
         }
         setTimeout(() => {
@@ -1967,7 +2018,40 @@ document.getElementById('ringingSound').volume = 0.3;
         return finalResult;
     }
 
-    function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null) {
+    function createFileAttachmentElement(dataUrl, fileName, fileSize) {
+        const a = document.createElement('a');
+        a.className = 'file-attachment';
+        a.href = dataUrl;
+        a.download = fileName || 'file';
+        
+        const icon = document.createElement('span');
+        icon.className = 'file-icon';
+        icon.innerText = '⛘';
+        
+        const info = document.createElement('div');
+        info.className = 'file-info';
+        
+        const nameEl = document.createElement('div');
+        nameEl.className = 'file-name';
+        nameEl.innerText = fileName || 'File';
+        
+        const sizeEl = document.createElement('div');
+        sizeEl.className = 'file-size';
+        sizeEl.innerText = fileSize ? formatFileSize(fileSize) : '';
+        
+        info.appendChild(nameEl);
+        if (fileSize) info.appendChild(sizeEl);
+        
+        a.appendChild(icon);
+        a.appendChild(info);
+        return a;
+    }
+
+    function getFileIcon(fileName) {
+        return '⛘';
+    }
+
+    function addMsgToChat(data, side, type, savedTime = null, existingMsgId = null, fileName = null, fileSize = null, mimeType = null) {
         const container = chatMessagesDiv;
         if (!container) return;
         
@@ -1991,8 +2075,26 @@ document.getElementById('ringingSound').volume = 0.3;
         if (type === 'text') {
             content.innerHTML = linkify(data);
         }
-        else if (type === 'image') { const img = document.createElement('img'); img.src = data; content.appendChild(img); }
-        else if (type === 'audio') { const audioEl = document.createElement('audio'); audioEl.controls = true; audioEl.src = data; content.appendChild(audioEl); }
+        else if (type === 'image') { 
+            const img = document.createElement('img'); 
+            img.src = data; 
+            content.appendChild(img); 
+        }
+        else if (type === 'audio') { 
+            const audioEl = document.createElement('audio'); 
+            audioEl.controls = true; 
+            audioEl.src = data; 
+            content.appendChild(audioEl); 
+        }
+        else if (type === 'video') {
+            const videoEl = document.createElement('video');
+            videoEl.controls = true;
+            videoEl.src = data;
+            content.appendChild(videoEl);
+        }
+        else if (type === 'file') {
+            content.appendChild(createFileAttachmentElement(data, fileName, fileSize));
+        }
         msgDiv.appendChild(content);
         
         const timeDiv = document.createElement('div'); 
@@ -2326,21 +2428,38 @@ document.getElementById('ringingSound').volume = 0.3;
                     if (statusDot) statusDot.className = `status-dot ${chatData.status === 'online' ? 'online' : 'offline'}`;
                 }
                 updateChatsListUI();
-            } else if (payload.type === 'text' || payload.type === 'image' || payload.type === 'audio') {
+            } else if (payload.type === 'text' || payload.type === 'image' || 
+                       payload.type === 'audio' || payload.type === 'video' || 
+                       payload.type === 'file') {
+                
                 chatData.lastMessage = payload.type === 'text' ? 
                     (payload.data.length > 30 ? payload.data.substring(0,27)+'...' : payload.data) : 
-                    (payload.type === 'image' ? '✿ Photo' : '♪ Voice');
+                    payload.type === 'image' ? '✿ Photo' :
+                    payload.type === 'audio' ? '♪ Voice' :
+                    payload.type === 'video' ? '▶︎ Video' :
+                    `⛘ ${payload.fileName || 'File'}`;
+                
                 if (currentChatPeer !== peerId) chatData.unreadCount = (chatData.unreadCount || 0) + 1;
                 if (!chatData.history) chatData.history = [];
                 
                 const exists = chatData.history.some(m => m.msgId === payload.msgId);
                 if (!exists) {
-                    chatData.history.push({ data: payload.data, side: 'other', type: payload.type, time: Date.now(), msgId: payload.msgId });
+                    chatData.history.push({ 
+                        data: payload.data, 
+                        side: 'other', 
+                        type: payload.type, 
+                        time: Date.now(), 
+                        msgId: payload.msgId,
+                        fileName: payload.fileName || null,
+                        fileSize: payload.fileSize || null,
+                        mimeType: payload.mimeType || null
+                    });
                     if (chatData.history.length > 50) chatData.history.shift();
                     saveAllChats();
+                    
                     if (currentChatPeer === peerId) {
                         hideTypingIndicator();
-                        addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId);
+                        addMsgToChat(payload.data, 'other', payload.type, null, payload.msgId, payload.fileName, payload.fileSize, payload.mimeType);
                         playMsgSound();
                         showNotification(
                             chatData.displayName || chatData.nick,
@@ -2355,7 +2474,6 @@ document.getElementById('ringingSound').volume = 0.3;
                             chatData.avatar
                         );
                     }
-                    // Обновляем бейдж в заголовке вкладки
                     updateTabTitle();
                 }
             } else if (payload.type === 'reaction_toggle') {
@@ -2417,7 +2535,6 @@ document.getElementById('ringingSound').volume = 0.3;
         }
         
         chat.unreadCount = 0;
-        // Обновляем заголовок вкладки — убрали непрочитанные
         updateTabTitle();
         loadChatHistoryForPeer(peerId);
         
@@ -2546,21 +2663,29 @@ document.getElementById('ringingSound').volume = 0.3;
         input.value = '';
     }
     
+    function getMessageTypeFromMime(mimeType) {
+        if (!mimeType) return 'file';
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType.startsWith('audio/')) return 'audio';
+        if (mimeType.startsWith('video/')) return 'video';
+        return 'file';
+    }
+    
     function sendFile(file) {
         if (!file) return;
         
         const MAX_FILE_SIZE = 10 * 1024 * 1024;
         if (file.size > MAX_FILE_SIZE) {
-            showAlert("File is too large (max 10 MB)");
-            return;
-        }
-        
-        if (!file.type.startsWith('image/')) {
-            showAlert("Only images are supported");
+            showAlert(`File is too large (max 10 MB). Your file: ${formatFileSize(file.size)}`);
             return;
         }
         
         const msgId = `msg_${Date.now()}_${Math.random()}`;
+        const fileType = getMessageTypeFromMime(file.type);
+        const fileName = file.name || 'file';
+        const fileSize = file.size;
+        const mimeType = file.type || '';
+        
         createUploadingMessage(msgId);
         
         const reader = new FileReader();
@@ -2575,7 +2700,7 @@ document.getElementById('ringingSound').volume = 0.3;
         reader.onload = (ev) => {
             updateUploadProgress(msgId, 100);
             setTimeout(() => {
-                finishUploadMessage(msgId, ev.target.result);
+                finishUploadMessage(msgId, ev.target.result, fileType, fileName, fileSize, mimeType);
             }, 200);
         };
         
@@ -2629,13 +2754,20 @@ document.getElementById('ringingSound').volume = 0.3;
         if (text) text.innerText = percent + '%';
     }
     
-    function finishUploadMessage(msgId, dataUrl) {
+    function finishUploadMessage(msgId, dataUrl, fileType, fileName, fileSize, mimeType) {
         const msgDiv = document.querySelector(`.msg[data-msg-id="${msgId}"]`);
         if (!msgDiv) return;
         
         if (currentConn && currentConn.open) {
             try {
-                currentConn.send({ type: 'image', data: dataUrl, msgId: msgId });
+                currentConn.send({ 
+                    type: fileType, 
+                    data: dataUrl, 
+                    msgId: msgId,
+                    fileName: fileName,
+                    fileSize: fileSize,
+                    mimeType: mimeType
+                });
             } catch (e) {
                 failUploadMessage(msgId, "Send error");
                 return;
@@ -2648,21 +2780,45 @@ document.getElementById('ringingSound').volume = 0.3;
         const progressBlock = msgDiv.querySelector('.upload-progress');
         if (progressBlock) progressBlock.remove();
         
-        const img = document.createElement('img');
-        img.src = dataUrl;
         const timeEl = msgDiv.querySelector('.msg-time');
-        msgDiv.insertBefore(img, timeEl);
+        
+        let element;
+        if (fileType === 'image') {
+            element = document.createElement('img');
+            element.src = dataUrl;
+        } else if (fileType === 'audio') {
+            element = document.createElement('audio');
+            element.controls = true;
+            element.src = dataUrl;
+        } else if (fileType === 'video') {
+            element = document.createElement('video');
+            element.controls = true;
+            element.src = dataUrl;
+        } else {
+            element = createFileAttachmentElement(dataUrl, fileName, fileSize);
+        }
+        
+        msgDiv.insertBefore(element, timeEl);
         
         const chat = activeChats.get(currentChatPeer);
         if (chat) {
-            chat.lastMessage = '✿ Photo';
+            const lastMsgLabel = 
+                fileType === 'image' ? '✿ Photo' :
+                fileType === 'audio' ? '♪ Voice' :
+                fileType === 'video' ? '▶︎ Video' :
+                `⛘ ${fileName || 'File'}`;
+            
+            chat.lastMessage = lastMsgLabel;
             if (!chat.history) chat.history = [];
             chat.history.push({
                 data: dataUrl,
                 side: 'my',
-                type: 'image',
+                type: fileType,
                 time: Date.now(),
-                msgId: msgId
+                msgId: msgId,
+                fileName: fileName,
+                fileSize: fileSize,
+                mimeType: mimeType
             });
             if (chat.history.length > 50) chat.history.shift();
             saveAllChats();
@@ -3437,14 +3593,14 @@ document.getElementById('ringingSound').volume = 0.3;
         dropOverlay.classList.remove('active');
         if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
         const files = e.dataTransfer.files;
-        if (files.length > 0 && files[0].type.indexOf('image') !== -1) sendFile(files[0]);
+        if (files.length > 0) sendFile(files[0]);
     });
     
     document.addEventListener('paste', (e) => {
         if ((!isDesktop && !chatScreen.classList.contains('chat-visible')) || !currentConn || !currentConn.open) return;
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let item of items) {
-            if (item.type.indexOf('image') !== -1) {
+            if (item.kind === 'file') {
                 e.preventDefault();
                 const file = item.getAsFile();
                 if (file) sendFile(file);
