@@ -291,7 +291,7 @@
             border-radius: 20px;
             min-width: 25px;
             height: 25px;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -1631,7 +1631,6 @@ document.getElementById('ringingSound').volume = 0.3;
     let hideTypingTimeout = null;
 
     // ====== MUTE SOUND ======
-    // Sound is muted / off - notifications won't come through
     let isSoundMuted = localStorage.getItem('soc-muted') === 'true';
     let tempMuted = isSoundMuted;
 
@@ -1641,6 +1640,9 @@ document.getElementById('ringingSound').volume = 0.3;
     // ====== Таймер звонка ======
     let callTimerInterval = null;
     let callStartTime = null;
+
+    // ====== TAB TITLE UNREAD ======
+    const BASE_TITLE = 'SOC';
 
     const homeScreen = document.getElementById('homeScreen');
     const chatScreen = document.getElementById('chatScreen');
@@ -1710,13 +1712,12 @@ document.getElementById('ringingSound').volume = 0.3;
         if (sound) sound.play().catch(e => {});
     }
 
-    // ====== NOTIFICATIONS: запрос при загрузке ======
+    // ====== NOTIFICATIONS ======
     function checkNotificationPermission() {
         if (!('Notification' in window)) return 'unsupported';
         return Notification.permission;
     }
 
-    // Запрашиваем разрешение при загрузке (как камера/микрофон)
     async function requestNotificationPermissionOnLoad() {
         if (!('Notification' in window)) {
             console.log('Notifications not supported');
@@ -1734,7 +1735,6 @@ document.getElementById('ringingSound').volume = 0.3;
             const permission = await Notification.requestPermission();
             notificationPermission = permission;
             if (permission === 'granted') {
-                // Тестовое уведомление при первом разрешении
                 try {
                     new Notification("SOC", {
                         body: "Notifications enabled!",
@@ -1750,9 +1750,7 @@ document.getElementById('ringingSound').volume = 0.3;
         }
     }
 
-    // Показ уведомления: только если разрешено И звук НЕ выключен
     function showNotification(title, body, icon) {
-        // Если звук выключен (mute) — уведомления НЕ приходят
         if (isSoundMuted) return;
         
         if (!('Notification' in window)) return;
@@ -1866,6 +1864,24 @@ document.getElementById('ringingSound').volume = 0.3;
             } catch(e) { console.error(e); }
         }
     }
+
+    // ====== TITLE UNREAD BADGE ======
+    function getTotalUnread() {
+        let total = 0;
+        for (const chat of activeChats.values()) {
+            total += (chat.unreadCount || 0);
+        }
+        return total;
+    }
+
+    function updateTabTitle() {
+        const total = getTotalUnread();
+        if (total > 0) {
+            document.title = `New message (${total})`;
+        } else {
+            document.title = BASE_TITLE;
+        }
+    }
     
     function updateChatsListUI() {
         let container = document.getElementById('chatsListContainer');
@@ -1919,6 +1935,9 @@ document.getElementById('ringingSound').volume = 0.3;
         } else {
             notConnectedPlaceholder.style.display = 'flex';
         }
+
+        // Обновляем бейдж в заголовке вкладки
+        updateTabTitle();
     }
     
     function loadChatHistoryForPeer(peerId) {
@@ -2336,6 +2355,8 @@ document.getElementById('ringingSound').volume = 0.3;
                             chatData.avatar
                         );
                     }
+                    // Обновляем бейдж в заголовке вкладки
+                    updateTabTitle();
                 }
             } else if (payload.type === 'reaction_toggle') {
                 if (currentChatPeer === peerId) handlePeerReaction(payload.msgId, payload.emoji);
@@ -2396,6 +2417,8 @@ document.getElementById('ringingSound').volume = 0.3;
         }
         
         chat.unreadCount = 0;
+        // Обновляем заголовок вкладки — убрали непрочитанные
+        updateTabTitle();
         loadChatHistoryForPeer(peerId);
         
         peerNickChat.innerText = chat.displayName || chat.nick;
@@ -2442,6 +2465,7 @@ document.getElementById('ringingSound').volume = 0.3;
                         switchToHomeMode();
                     }
                     updateChatsListUI();
+                    updateTabTitle();
                 }
             });
         };
@@ -2522,7 +2546,6 @@ document.getElementById('ringingSound').volume = 0.3;
         input.value = '';
     }
     
-    // ====== sendFile с прогресс-баром ======
     function sendFile(file) {
         if (!file) return;
         
@@ -2705,7 +2728,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== ТАЙМЕР ЗВОНКА ======
-
     function startCallTimer() {
         stopCallTimer();
         callStartTime = Date.now();
@@ -2727,7 +2749,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== АУДІОДЗВІНОК ======
-
     async function startAudioCall() {
         if (!currentChatPeer) return;
         const chat = activeChats.get(currentChatPeer);
@@ -2748,7 +2769,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== ВІДЕОДЗВІНОК ======
-
     async function startVideoCall() {
         if (!currentChatPeer) return;
         const chat = activeChats.get(currentChatPeer);
@@ -2773,7 +2793,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== ВХІДНИЙ ДЗВІНОК ======
-
     function handleIncomingCall(incomingCall) {
         const callerId = incomingCall.peer;
         if (!activeChats.has(callerId)) {
@@ -2847,7 +2866,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== ОБРОБКА ПОДІЙ ДЗВІНКА ======
-
     function handleCallEvents(call, isVideo) {
         currentCall = call;
         isMicMuted = false;
@@ -3029,7 +3047,6 @@ document.getElementById('ringingSound').volume = 0.3;
     }
 
     // ====== МОДАЛКИ ======
-
     function animateModalClose(modalElement, callback) {
         const modalContent = modalElement.querySelector('.modal');
         if (modalContent) {
@@ -3374,7 +3391,6 @@ document.getElementById('ringingSound').volume = 0.3;
         if (e.key === 'Enter') { e.preventDefault(); connectToPeer(); }
     });
 
-    // ====== отслеживание ввода в поле сообщения ======
     const msgInputEl = document.getElementById('msgInput');
     if (msgInputEl) {
         let lastTypingSent = 0;
@@ -3440,8 +3456,6 @@ document.getElementById('ringingSound').volume = 0.3;
     checkActiveChatState();
     applyMuteState();
 
-    // ====== ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ ПРИ ЗАГРУЗКЕ ======
-    // Как при звонке спрашивается камера/микрофон — так и здесь спрашиваем уведомления
     requestNotificationPermissionOnLoad();
 
     if(!myNick || !isValidNick(myNick)) {
